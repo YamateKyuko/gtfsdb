@@ -9,7 +9,7 @@
 	"compatibility_date": "2025-03-21",
 	"observability": {
 		"enabled": true
-	}
+	},
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
@@ -44,4 +44,18 @@
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
 	 */
 	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
+
+
+
+
+	"d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gtfsdb",
+      "database_id": "9877f766-d9ab-42aa-9b2d-68efb91e8971"
+    }
+  ],
+
+
+	"compatibility_flags": ["nodejs_compat"]
 }
