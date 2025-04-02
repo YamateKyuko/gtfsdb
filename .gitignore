@@ -176,3 +176,9 @@ dist
 gtfsdb_backup.sql
 
 .dev.vars
+
+x/impt.sh
+
+unzipped
+
+downloaded.zip

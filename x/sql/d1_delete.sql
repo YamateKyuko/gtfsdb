@@ -1,0 +1,11 @@
+delete from stop_patterns;
+delete from trip_patterns;
+delete from parent_stations;
+delete from stop_times;
+delete from stops;
+delete from trips;
+delete from calendar;
+delete from services;
+delete from routes;
+delete from agency;
+delete from feed;

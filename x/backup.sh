@@ -1,5 +1,7 @@
-
+#!/bin/sh
 # source ./backup.sh で実行
+
+npx wrangler d1 execute gtfsdb --remote --yes --file="sql/d1_delete.sql"
 
 # バックアップファイルを作成
 pg_dump \
@@ -29,3 +31,6 @@ done
 
 # 終了後、必要に応じて分割ファイルを削除
 rm chunk_backup_*
+
+
+# aiでエラー
