@@ -29,7 +29,6 @@ ARRY=(
 # )
 
 echo "--> 仮テーブル設定"
-
 psql gtfsdb \
   -U akaki \
   -p 5432 \
@@ -49,14 +48,6 @@ do
     echo "--> ${ARRY[$IDX]}.txtは存在しません"
   fi
 done
-
-# COPY r.agency(agency_id,agency_name,agency_url,agency_timezone,agency_lang,agency_phone,agency_fare_url,agency_email)
-# 	FROM '/Users/akaki/Desktop/desktop/ODPT/cloudflare/gtfsdb/x/unzipped/agency.txt'
-# 	with (
-# 		format CSV,
-# 		delimiter ',',
-# 		header match
-# 	);
 
 echo "--> feed_idの付加"
 psql gtfsdb \

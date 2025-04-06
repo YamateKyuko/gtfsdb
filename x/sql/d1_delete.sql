@@ -9,3 +9,5 @@ delete from services;
 delete from routes;
 delete from agency;
 delete from feed;
+
+delete from stop_offsets;

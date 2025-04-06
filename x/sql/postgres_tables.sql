@@ -51,7 +51,7 @@ create table feed (
   feed_version varchar(63),
   primary key (feed_id)
 );
-create index if not exists ix_feed_feed_id on feed(feed_id);
+-- create index if not exists ix_feed_feed_id on feed(feed_id);
 
 drop table if exists agency cascade;
 create table agency (
@@ -72,7 +72,7 @@ create table agency (
   primary key (agency_id),
   constraint fk_agency_feed_id foreign key (feed_id) references feed(feed_id) on delete cascade on update cascade
 );
-create index if not exists ix_agency_agency_id on agency(feed_id, agency_id);
+-- create index if not exists ix_agency_agency_id on agency(feed_id, agency_id);
 
 drop table if exists routes cascade;
 create table routes (
@@ -94,7 +94,7 @@ create table routes (
   constraint fk_routes_agency_id foreign key (agency_id) references agency(agency_id) on delete cascade on update cascade,
   constraint ch_routes_short_long_name check ((route_short_name=null and route_long_name!=null) or (route_short_name!=null and route_long_name=null) or (route_short_name!=null and route_long_name!=null))
 );
-create index if not exists ix_routes_route_id on routes(feed_id, route_id);
+-- create index if not exists ix_routes_route_id on routes(feed_id, route_id);
 
 drop table if exists services cascade;
 create table services (
@@ -103,7 +103,7 @@ create table services (
   primary key (feed_id, service_id),
   constraint fk_services_feed_id foreign key (feed_id) references feed(feed_id) on delete cascade on update cascade
 );
-create index if not exists ix_services_service_id on services(feed_id, service_id);
+-- create index if not exists ix_services_service_id on services(feed_id, service_id);
 
 drop table if exists calendar cascade;
 create table calendar (
@@ -113,7 +113,7 @@ create table calendar (
   primary key (feed_id, service_id, date),
   constraint fk_calendar_service_id foreign key (feed_id, service_id) references services(feed_id, service_id) on delete cascade on update cascade
 );
-create index if not exists ix_calendar_service_id on calendar(feed_id, service_id);
+-- create index if not exists ix_calendar_service_id on calendar(feed_id, service_id);
 
 drop table if exists trip_patterns cascade;
 create table trip_patterns (
@@ -126,7 +126,7 @@ create table trip_patterns (
   route_name varchar(255) not null,
   primary key (pattern_id)
 );
-create index if not exists ix_trip_patterns_pattern_id on trip_patterns(pattern_id);
+-- create index if not exists ix_trip_patterns_pattern_id on trip_patterns(pattern_id);
 
 drop table if exists trips cascade;
 create table trips (
@@ -146,11 +146,15 @@ create table trips (
   jp_office_id varchar(63),
   jp_trip_desc_detail varchar(255),
   pattern_id integer,
+
+  offset_id integer,
+  diff_time integer,
+
   primary key (feed_id, trip_id),
   constraint fk_trips_route_id foreign key (feed_id, route_id) references routes(feed_id, route_id) on delete cascade on update cascade,
   constraint fk_trips_service_id foreign key (feed_id, service_id) references services(feed_id, service_id) on delete cascade on update cascade
 );
-create index if not exists ix_trips_trip_id on trips(feed_id, trip_id);
+-- create index if not exists ix_trips_trip_id on trips(feed_id, trip_id);
 
 drop table if exists parent_stations cascade;
 create table parent_stations (
@@ -162,7 +166,7 @@ create table parent_stations (
   station_lon double precision,
   primary key (station_id)
 );
-create index if not exists ix_parent_stations_station_id on parent_stations(station_id);
+-- create index if not exists ix_parent_stations_station_id on parent_stations(station_id);
 
 drop table if exists stops cascade;
 create table stops (
@@ -184,7 +188,7 @@ create table stops (
   primary key (feed_id, stop_id),
   constraint fk_stops_feed_id foreign key (feed_id) references feed(feed_id) on delete cascade on update cascade
 );
-create index if not exists ix_stops_stop_id on stops(feed_id, stop_id);
+-- create index if not exists ix_stops_stop_id on stops(feed_id, stop_id);
 
 drop table if exists stop_times cascade;
 create table stop_times (
@@ -193,7 +197,7 @@ create table stop_times (
   arrival_time integer not null,
   departure_time integer not null,
   stop_id varchar(63) not null,
-  stop_sequence integer,
+  stop_sequence integer not null,
   stop_headsign varchar(63),
   pickup_type integer check (pickup_type in (0, 1, 2, 3)),
   drop_off_type integer check (drop_off_type in (0, 1, 2, 3)),
@@ -202,7 +206,7 @@ create table stop_times (
   constraint fk_stop_times_trip_id foreign key (feed_id, trip_id) references trips(feed_id, trip_id) on delete cascade on update cascade,
   constraint fk_stop_times_stop_id foreign key (feed_id, stop_id) references stops(feed_id, stop_id) on delete cascade on update cascade
 );
-create index if not exists ix_stop_times_trip_id on stop_times(feed_id, trip_id);
+-- create index if not exists ix_stop_times_trip_id on stop_times(feed_id, trip_id);
 
 drop table if exists stop_patterns cascade;
 create table stop_patterns (
@@ -211,16 +215,33 @@ create table stop_patterns (
   agency_id varchar(63) not null,
   route_type integer check (route_type in (0, 1, 2, 3, 4, 5, 6, 7)),
   route_id varchar(63) not null,
-  stop_headsign varchar(63),
-  direction_id integer check (direction_id in (0, 1)),
   route_name varchar(255) not null,
-  stop_id varchar(63) not null,
-  next_stop_id varchar(63),
+  direction_id integer check (direction_id in (0, 1)),
   stop_sequence integer not null,
+  stop_id varchar(63) not null,
   stop_name varchar(63) not null,
+  stop_headsign varchar(63),
   platform_code varchar(255),
+  -- next_stop_id varchar(63),
   zone_id varchar(63),
-  duration_time integer,
+  -- duration_time integer,
   primary key (pattern_id, stop_sequence)
 );
-create index if not exists ix_stop_patterns_stop_sequence on stop_patterns(pattern_id, stop_sequence);
+-- create index if not exists ix_stop_patterns_stop_sequence on stop_patterns(pattern_id, stop_sequence);
+
+drop table if exists stop_offsets cascade;
+create table stop_offsets (
+  feed_id smallint not null,
+	offset_id integer not null,
+  pattern_id integer not null,
+	stop_id varchar(63) not null,
+	stop_sequence integer,
+  arrival_offset integer not null,
+  departure_offset integer not null,
+  stop_headsign varchar(63),
+  pickup_type integer check (pickup_type in (0, 1, 2, 3)),
+  drop_off_type integer check (drop_off_type in (0, 1, 2, 3)),
+  shape_dist_traveled varchar(255),
+  primary key (feed_id, offset_id, stop_sequence)
+);
+-- create index if not exists ix_stop_times_trip_id on stop_times(feed_id, trip_id);

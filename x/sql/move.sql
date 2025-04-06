@@ -249,7 +249,13 @@ select
   r.to_second(arrival_time),
   r.to_second(departure_time),
   stop_id,
-  stop_sequence,
+  row_number() over(
+    partition by
+      feed_id,
+      trip_id
+    order by
+      stop_sequence
+  ) as stop_sequence,
   stop_headsign,
   pickup_type,
   drop_off_type,

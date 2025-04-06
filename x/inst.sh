@@ -2,28 +2,23 @@
 
 # source uzip.sh CONS FEED DATE
 CONS=$1
-
-# 適当なシェルスクリプトに source "<conskey>" とかいてそちらを実行しましょう。(.gitignoreを忘れずに)
-
-echo "--> GTFSDBへのインサート"
-
 FEED=$2
 DATE=$3
 
-# 対話型も可
-# echo "--> GTFSを指定:"
-# read FEED
-# echo "--> 日付を指定:"
-# read DATE
+echo "--> GTFSDBへのインサート"
 
-if   [ $FEED = "keio" ]; then
+if   [ $FEED = "keiobus" ]; then
   echo "京王バス"
   URL="https://api.odpt.org/api/v4/files/odpt/KeioBus/AllLines.zip?date=${DATE}&acl:consumerKey=${CONS}"
   FEID=1
-elif [ $FEED = "toei" ]; then
+elif [ $FEED = "toeibus" ]; then
   echo "都バス"
   URL="https://api-public.odpt.org/api/v4/files/Toei/data/ToeiBus-GTFS.zip?date=${DATE}"
   FEID=2
+elif [ $FEED = "seibubus" ]; then
+  echo "西武バス"
+  URL="https://api.odpt.org/api/v4/files/SeibuBus/data/SeibuBus-GTFS.zip?acl:consumerKey=${CONS}"
+  FEID=3
 else
   exit
 fi
