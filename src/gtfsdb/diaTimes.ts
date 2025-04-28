@@ -59,7 +59,7 @@ const api = new dbAPI<{
     if (!results) return Response.json([]);
     
     return Response.json({
-      trips: results.map((r) => {JSON.parse(r.trp as string)})
+      trips: results.map((r) => JSON.parse(r.trp as string))
     });
   },
 });
