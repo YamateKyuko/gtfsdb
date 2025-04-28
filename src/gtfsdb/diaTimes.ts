@@ -18,7 +18,7 @@ const api = new dbAPI<{
     const { results } = await db.prepare(`
       select
         json_object(
-          'trips', json_group_array(obj)
+          'trips', json_group_array(trp)
         ) as obj
       from (
         select 
@@ -37,7 +37,7 @@ const api = new dbAPI<{
                 'offset_time', offset_time
               )
             )
-          ) as obj
+          ) as trp
         from stop_times as tim
         inner join stop_patterns using (feed_id, pattern_id, stop_sequence)
         inner join trips using (feed_id, trip_id)
@@ -58,7 +58,7 @@ const api = new dbAPI<{
     
     if (!results) return Response.json([]);
     
-    return Response.json(JSON.parse(results[0].obj as string));
+    return Response.json({txt: results});
   },
 });
 
