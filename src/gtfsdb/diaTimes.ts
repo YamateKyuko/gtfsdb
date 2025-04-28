@@ -17,30 +17,34 @@ const api = new dbAPI<{
 
     const { results } = await db.prepare(`
       select
-        json_group_array(arr) as results
+        json_object(
+          'trips', json_group_array(obj)
+        ) as obj
       from (
         select 
-          json_group_array(
-            json_object(
-              'feed_id', feed_id,
-              'trip_id', trip_id,
-              'stop_sequence', stop_sequence,
-              'stop_id', tim.stop_id,
-              'arrival_time', arrival_time,
-              'departure_time', departure_time,
-              'pickup_type', pickup_type,
-              'drop_off_type', drop_off_type,
-              'platform_code', platform_code,
-              'offset_time', offset_time
+          json_object(
+            'feed_id', feed_id,
+            'trip_id', trip_id,
+            'stop_times', json_group_array(
+              json_object(
+                'stop_sequence', stop_sequence,
+                'stop_id', tim.stop_id,
+                'arrival_time', arrival_time,
+                'departure_time', departure_time,
+                'pickup_type', pickup_type,
+                'drop_off_type', drop_off_type,
+                'platform_code', platform_code,
+                'offset_time', offset_time
+              )
             )
-          ) as arr
+          ) as obj
         from stop_times as tim
         inner join stop_patterns using (feed_id, pattern_id, stop_sequence)
         inner join trips using (feed_id, trip_id)
         WHERE 
           tim.pattern_id = $1 and
           service_id in (select service_id from calendar where date = $2)
-        group by trip_id
+        group by feed_id, trip_id
         order by
           feed_id,
           trip_id,
@@ -54,8 +58,11 @@ const api = new dbAPI<{
     
     if (!results) return Response.json([]);
     
-    return Response.json({txt: results[0]['results']});
+    return Response.json(JSON.parse(results[0].obj as string));
   },
 });
 
 export default api;
+
+
+// 多次元配列諦め
