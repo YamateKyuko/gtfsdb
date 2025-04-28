@@ -49,16 +49,12 @@ const api = new dbAPI<{
       `,
     )
       .bind(...[patternId, date])
-      
       .all()
-      
       ;
     
     if (!results) return Response.json([]);
-
-    if (!results[0]['results']) return Response.json([]);
     
-    return Response.json(JSON.parse(results[0]['results'] as string));
+    return Response.json({txt: results[0]['results']});
   },
 });
 
