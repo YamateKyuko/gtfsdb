@@ -44,7 +44,7 @@ const api = new dbAPI<{
         stop_sequence;
       `,
     )
-      .bind([patternId, date])
+      .bind(...[patternId, date])
       .all();
     
     if (!results) return Response.json([]);
