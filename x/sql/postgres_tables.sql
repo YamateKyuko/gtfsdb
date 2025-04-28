@@ -147,8 +147,8 @@ create table trips (
   jp_trip_desc_detail varchar(255),
   pattern_id integer,
 
-  offset_id integer,
-  diff_time integer,
+  -- offset_id integer,
+  -- diff_time integer,
 
   primary key (feed_id, trip_id),
   constraint fk_trips_route_id foreign key (feed_id, route_id) references routes(feed_id, route_id) on delete cascade on update cascade,
@@ -202,6 +202,7 @@ create table stop_times (
   pickup_type integer check (pickup_type in (0, 1, 2, 3)),
   drop_off_type integer check (drop_off_type in (0, 1, 2, 3)),
   shape_dist_traveled varchar(255),
+  pattern_id integer,
   primary key (feed_id, trip_id, stop_sequence),
   constraint fk_stop_times_trip_id foreign key (feed_id, trip_id) references trips(feed_id, trip_id) on delete cascade on update cascade,
   constraint fk_stop_times_stop_id foreign key (feed_id, stop_id) references stops(feed_id, stop_id) on delete cascade on update cascade
@@ -222,26 +223,72 @@ create table stop_patterns (
   stop_name varchar(63) not null,
   stop_headsign varchar(63),
   platform_code varchar(255),
-  -- next_stop_id varchar(63),
+  next_stop_id varchar(63),
   zone_id varchar(63),
-  -- duration_time integer,
+  duration_time integer,
+  offset_time integer,
+
+  -- parent_id varchar(255),
+
   primary key (pattern_id, stop_sequence)
 );
 -- create index if not exists ix_stop_patterns_stop_sequence on stop_patterns(pattern_id, stop_sequence);
 
-drop table if exists stop_offsets cascade;
-create table stop_offsets (
-  feed_id smallint not null,
-	offset_id integer not null,
-  pattern_id integer not null,
-	stop_id varchar(63) not null,
-	stop_sequence integer,
-  arrival_offset integer not null,
-  departure_offset integer not null,
-  stop_headsign varchar(63),
-  pickup_type integer check (pickup_type in (0, 1, 2, 3)),
-  drop_off_type integer check (drop_off_type in (0, 1, 2, 3)),
-  shape_dist_traveled varchar(255),
-  primary key (feed_id, offset_id, stop_sequence)
-);
+-- drop table if exists stop_offsets cascade;
+-- create table stop_offsets (
+--   feed_id smallint not null,
+-- 	offset_id integer not null,
+--   pattern_id integer not null,
+-- 	stop_id varchar(63) not null,
+-- 	stop_sequence integer,
+--   arrival_offset integer not null,
+--   departure_offset integer not null,
+--   stop_headsign varchar(63),
+--   pickup_type integer check (pickup_type in (0, 1, 2, 3)),
+--   drop_off_type integer check (drop_off_type in (0, 1, 2, 3)),
+--   shape_dist_traveled varchar(255),
+--   primary key (feed_id, offset_id, stop_sequence)
+-- );
 -- create index if not exists ix_stop_times_trip_id on stop_times(feed_id, trip_id);
+
+
+
+
+
+drop table if exists fare_attributes cascade;
+create table fare_attributes (
+  feed_id smallint not null,
+  fare_id varchar(63) not null,
+  price float not null,
+  ic_price float,
+  currency_type varchar(15) not null, -- 通貨
+  payment_method integer not null check (payment_method in (0, 1)), -- 後払い, 先払い
+  transfers integer,
+  transfer_duration integer, -- 乗り換え可能時間
+  primary key (feed_id, fare_id)
+);
+-- create index if not exists ix_fare_attributes_fare_id on fare_attributes(feed_id, fare_id);
+
+drop table if exists fare_rules cascade;
+create table fare_rules (
+  feed_id smallint not null,
+  fare_id varchar(63) not null,
+  route_id varchar(63) not null,
+  origin_id varchar(63),
+  destination_id varchar(63),
+  constraint fk_fare_rules_fare_id foreign key (feed_id, fare_id) references fare_attributes(feed_id, fare_id) on delete cascade on update cascade,
+  constraint fk_fare_rules_route_id foreign key (feed_id, route_id) references routes(feed_id, route_id) on delete cascade on update cascade
+);
+-- create index if not exists ix_fare_rules_zone_id on fare_rules(feed_id, fare_id, origine_id, destination_id);
+
+drop table if exists translations cascade;
+create table translations (
+  feed_id smallint not null,
+  language varchar(15) not null check (language in ('ja', 'ja-Hrkt', 'en')), -- 言語
+  translation_type varchar(63) not null check (translation_type in ('stop_name')),
+  translation varchar(255) not null, -- 翻訳先
+  record_id varchar(63) not null,
+  primary key (feed_id, language, translation_type, record_id)
+);
+-- create index if not exists ix_translations_zone_id on translations(feed_id, fare_id, origine_id, destination_id);
+

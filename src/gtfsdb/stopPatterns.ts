@@ -1,4 +1,4 @@
-import { dbAPI } from "./dbAPI";
+import { dbAPI } from "../dbAPI";
 
 const api = new dbAPI<{
   feed_id: number;

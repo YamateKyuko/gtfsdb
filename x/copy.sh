@@ -14,6 +14,9 @@ ARRY=(
   "trips"
   "stops"
   "stop_times"
+  "fare_attributes"
+  "fare_rules"
+  "translations"
 )
 
 # COLS=(
@@ -35,7 +38,7 @@ psql gtfsdb \
   -f ./sql/raw_tables.sql
 
 echo "--> CSVからコピー"
-for IDX in `seq 1 9`
+for IDX in `seq 1 11`
 do
   if [ -e "${DRCT}/unzipped/${ARRY[$IDX]}.txt" ]; then
     echo "--> ${ARRY[$IDX]}.txtの処理"

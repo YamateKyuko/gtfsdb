@@ -151,7 +151,7 @@ select
   service_id,
   to_char(to_date(date, 'YYYYMMDD'), 'YYYY-MM-DD') as date
 from dowck
-right join r.calendar_dates using(feed_id,service_id,date)
+left join r.calendar_dates using(feed_id,service_id,date)
 where
   exception_type != 2 or
   exception_type = 1 or
@@ -249,16 +249,92 @@ select
   r.to_second(arrival_time),
   r.to_second(departure_time),
   stop_id,
-  row_number() over(
-    partition by
-      feed_id,
-      trip_id
-    order by
-      stop_sequence
-  ) as stop_sequence,
+  stop_sequence,
+  -- row_number() over(
+  --   partition by
+  --     feed_id,
+  --     trip_id
+  --   order by
+  --     stop_sequence
+  -- ) as stop_sequence,
   stop_headsign,
   pickup_type,
   drop_off_type,
   shape_dist_traveled
 from r.stop_times
 on conflict do nothing;
+
+insert into fare_attributes (
+  feed_id,
+  fare_id,
+  price,
+  ic_price,
+  currency_type,
+  payment_method,
+  transfers,
+  transfer_duration
+)
+select
+  feed_id,
+  fare_id,
+  price,
+  ic_price,
+  currency_type,
+  payment_method,
+  transfers,
+  transfer_duration
+from r.fare_attributes
+on conflict do nothing;
+
+insert into fare_rules (
+  feed_id,
+  fare_id,
+  route_id,
+  origin_id,
+  destination_id
+)
+select
+  feed_id,
+  fare_id,
+  route_id,
+  origin_id,
+  destination_id
+from r.fare_rules
+on conflict do nothing;
+
+insert into fare_rules (
+  feed_id,
+  fare_id,
+  route_id,
+  origin_id,
+  destination_id
+)
+select
+  feed_id,
+  fare_id,
+  route_id,
+  destination_id,
+  origin_id
+from r.fare_rules
+on conflict do nothing;
+
+insert into translations (
+  feed_id,
+  language,
+  translation_type,
+  translation,
+  record_id
+)
+select
+  r.translations.feed_id,
+  language,
+  'stop_name',
+  translation,
+  stop_id
+from r.translations
+inner join stops on
+  r.translations.feed_id = stops.feed_id and
+  r.translations.record_id = stops.stop_id
+where 
+  table_name = 'stops' and
+  field_name = 'stop_name';

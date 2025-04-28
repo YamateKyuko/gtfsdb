@@ -1,5 +1,6 @@
 import stopPatternsAPI from "./gtfsdb/stopPatterns";
 import stopTimesAPI from "./gtfsdb/stopTimes";
+import diaTimesAPI from "./gtfsdb/diaTimes";
 
 export interface Env {
   DB: D1Database;
@@ -12,6 +13,7 @@ export default {
     const { pathname } = new URL(req.url);
     const paths = pathname.split('/');
 
+    // パス仕分け
     if (!(paths[1] == 'api')) return Response.json({gtfsdb: 'Not Found'}, { status: 404 })
 
     switch (paths[2]) {
@@ -21,6 +23,8 @@ export default {
             return await stopPatternsAPI.get(req, env.DB, apiKey);
           case 'stop_times':
             return await stopTimesAPI.get(req, env.DB, apiKey);
+          case 'dia_times':
+            return await diaTimesAPI.get(req, env.DB, apiKey);
           default:
             return Response.json({gtfsdb: 'Not Found'}, { status: 404 })
         };

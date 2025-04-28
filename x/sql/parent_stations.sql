@@ -1,4 +1,5 @@
 -- next_stop_list_insert
+-- keio, toei, seibu 1min8sec
 drop table if exists next_stop_list;
 create table next_stop_list as 
 with stop_pair as (
@@ -35,7 +36,7 @@ inner join next_stop_list using(feed_id, stop_id)
 ;
 
 -- parent_stations_insert
-create extension postgis;
+create extension if not exists postgis;
 
 drop table if exists temps;
 create table temps (

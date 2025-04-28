@@ -21,7 +21,7 @@ pg_dump \
   > "gtfsdb_backup.sql"
 
 # ファイルが大きいと怒られるので分割
-split -l 100000 gtfsdb_backup.sql chunk_backup_
+split -l 500000 gtfsdb_backup.sql chunk_backup_
 
 # 分割されたファイルを順に実行
 for CHUNK in chunk_backup_*; do
@@ -29,8 +29,7 @@ for CHUNK in chunk_backup_*; do
   npx wrangler d1 execute gtfsdb --remote --yes --file="$CHUNK"
 done
 
+npx wrangler d1 execute gtfsdb --remote --file="sql/create_index.sql"
+
 # 終了後、必要に応じて分割ファイルを削除
 rm chunk_backup_*
-
-
-# aiでエラー

@@ -1,14 +1,20 @@
--- drop table if exists stop_patterns;
--- drop table if exists trip_patterns;
--- drop table if exists parent_stations;
--- -- drop table if exists stop_times;
--- drop table if exists stops;
--- drop table if exists trips;
--- drop table if exists calendar;
--- drop table if exists services;
--- drop table if exists routes;
--- drop table if exists agency;
--- drop table if exists feed;
+-- npx wrangler d1 execute gtfsdb --remote --file="sql/sqlite_tables.sql"
+
+drop table if exists translations;
+drop table if exists fare_rules;
+drop table if exists fare_attributes;
+
+drop table if exists stop_patterns;
+drop table if exists trip_patterns;
+drop table if exists parent_stations;
+drop table if exists stop_times;
+drop table if exists stops;
+drop table if exists trips;
+drop table if exists calendar;
+drop table if exists services;
+drop table if exists routes;
+drop table if exists agency;
+drop table if exists feed;
 
 -- drop table if exists stop_offsets;
 
@@ -23,7 +29,7 @@ create table feed (
   feed_version text,
   primary key (feed_id)
 );
-create index if not exists ix_feed_feed_id on feed(feed_id);
+
 
 
 create table agency (
@@ -44,7 +50,7 @@ create table agency (
   primary key (agency_id),
   constraint fk_agency_feed_id foreign key (feed_id) references feed(feed_id) on delete cascade on update cascade
 );
-create index if not exists ix_agency_agency_id on agency(feed_id, agency_id);
+
 
 
 create table routes (
@@ -66,7 +72,7 @@ create table routes (
   constraint fk_routes_agency_id foreign key (agency_id) references agency(agency_id) on delete cascade on update cascade,
   constraint ch_routes_short_long_name check ((route_short_name=null and route_long_name!=null) or (route_short_name!=null and route_long_name=null) or (route_short_name!=null and route_long_name!=null))
 );
-create index if not exists ix_routes_route_id on routes(feed_id, route_id);
+
 
 
 create table services (
@@ -75,7 +81,7 @@ create table services (
   primary key (feed_id, service_id),
   constraint fk_services_feed_id foreign key (feed_id) references feed(feed_id) on delete cascade on update cascade
 );
-create index if not exists ix_services_service_id on services(feed_id, service_id);
+
 
 
 create table calendar (
@@ -85,7 +91,7 @@ create table calendar (
   primary key (feed_id, service_id, date),
   constraint fk_calendar_service_id foreign key (feed_id, service_id) references services(feed_id, service_id) on delete cascade on update cascade
 );
-create index if not exists ix_calendar_service_id on calendar(feed_id, service_id);
+
 
 
 create table trip_patterns (
@@ -98,7 +104,7 @@ create table trip_patterns (
   route_name text not null,
   primary key (pattern_id)
 );
-create index if not exists ix_trip_patterns_pattern_id on trip_patterns(pattern_id);
+
 
 
 create table trips (
@@ -119,14 +125,14 @@ create table trips (
   jp_trip_desc_detail text,
   pattern_id integer,
 
-  offset_id integer,
-  diff_time integer,
+  -- offset_id integer,
+  -- diff_time integer,
 
   primary key (feed_id, trip_id),
   constraint fk_trips_route_id foreign key (feed_id, route_id) references routes(feed_id, route_id) on delete cascade on update cascade,
   constraint fk_trips_service_id foreign key (feed_id, service_id) references services(feed_id, service_id) on delete cascade on update cascade
 );
-create index if not exists ix_trips_trip_id on trips(feed_id, trip_id);
+
 
 
 create table parent_stations (
@@ -138,7 +144,7 @@ create table parent_stations (
   station_lon double precision,
   primary key (station_id)
 );
-create index if not exists ix_stations_station_id on parent_stations(station_id);
+
 
 
 create table stops (
@@ -160,25 +166,26 @@ create table stops (
   primary key (feed_id, stop_id),
   constraint fk_stops_feed_id foreign key (feed_id) references feed(feed_id) on delete cascade on update cascade
 );
-create index if not exists ix_stops_stop_id on stops(feed_id, stop_id);
 
 
--- create table stop_times (
---   feed_id smallint not null,
---   trip_id text,
---   arrival_time integer not null,
---   departure_time integer not null,
---   stop_id text not null,
---   stop_sequence integer,
---   stop_headsign text,
---   pickup_type integer check (pickup_type in (0, 1, 2, 3)),
---   drop_off_type integer check (drop_off_type in (0, 1, 2, 3)),
---   shape_dist_traveled text,
---   primary key (feed_id, trip_id, stop_sequence),
---   constraint fk_stop_times_trip_id foreign key (feed_id, trip_id) references trips(feed_id, trip_id) on delete cascade on update cascade,
---   constraint fk_stop_times_stop_id foreign key (feed_id, stop_id) references stops(feed_id, stop_id) on delete cascade on update cascade
--- );
--- create index if not exists ix_stop_times_trip_id on stop_times(feed_id, trip_id);
+
+create table stop_times (
+  feed_id smallint not null,
+  trip_id text,
+  arrival_time integer not null,
+  departure_time integer not null,
+  stop_id text not null,
+  stop_sequence integer,
+  stop_headsign text,
+  pickup_type integer check (pickup_type in (0, 1, 2, 3)),
+  drop_off_type integer check (drop_off_type in (0, 1, 2, 3)),
+  shape_dist_traveled text,
+  pattern_id integer,
+  primary key (feed_id, trip_id, stop_sequence),
+  constraint fk_stop_times_trip_id foreign key (feed_id, trip_id) references trips(feed_id, trip_id) on delete cascade on update cascade,
+  constraint fk_stop_times_stop_id foreign key (feed_id, stop_id) references stops(feed_id, stop_id) on delete cascade on update cascade
+);
+
 
 
 create table stop_patterns (
@@ -191,30 +198,69 @@ create table stop_patterns (
   direction_id integer check (direction_id in (0, 1)),
   route_name text not null,
   stop_id text not null,
-  -- next_stop_id text,
+  next_stop_id text,
   stop_sequence integer not null,
   stop_name text not null,
   platform_code text,
   zone_id text,
-  -- duration_time integer,
+  duration_time integer,
+  offset_time integer,
   primary key (pattern_id, stop_sequence)
 );
-create index if not exists ix_stop_patterns_stop_sequence on stop_patterns(pattern_id, stop_sequence);
 
 
-create table stop_offsets (
+
+-- create table stop_offsets (
+--   feed_id smallint not null,
+--   trip_id text,
+--   arrival_offset integer not null,
+--   departure_offset integer not null,
+--   stop_id text not null,
+--   stop_sequence integer,
+--   stop_headsign text,
+--   pickup_type integer check (pickup_type in (0, 1, 2, 3)),
+--   drop_off_type integer check (drop_off_type in (0, 1, 2, 3)),
+--   shape_dist_traveled text,
+--   primary key (feed_id, trip_id, stop_sequence),
+--   constraint fk_stop_offsets_trip_id foreign key (feed_id, trip_id) references trips(feed_id, trip_id) on delete cascade on update cascade,
+--   constraint fk_stop_offsets_stop_id foreign key (feed_id, stop_id) references stops(feed_id, stop_id) on delete cascade on update cascade
+-- );
+-- create index if not exists ix_stop_offsets_trip_id on stop_offsets(feed_id, trip_id);
+
+
+
+create table fare_attributes (
   feed_id smallint not null,
-  trip_id text,
-  arrival_offset integer not null,
-  departure_offset integer not null,
-  stop_id text not null,
-  stop_sequence integer,
-  stop_headsign text,
-  pickup_type integer check (pickup_type in (0, 1, 2, 3)),
-  drop_off_type integer check (drop_off_type in (0, 1, 2, 3)),
-  shape_dist_traveled text,
-  primary key (feed_id, trip_id, stop_sequence),
-  constraint fk_stop_offsets_trip_id foreign key (feed_id, trip_id) references trips(feed_id, trip_id) on delete cascade on update cascade,
-  constraint fk_stop_offsets_stop_id foreign key (feed_id, stop_id) references stops(feed_id, stop_id) on delete cascade on update cascade
+  fare_id varchar(63) not null,
+  price float not null,
+  ic_price float,
+  currency_type varchar(15) not null, -- 通貨
+  payment_method integer not null check (payment_method in (0, 1)), -- 後払い, 先払い
+  transfers integer,
+  transfer_duration integer, -- 乗り換え可能時間
+  primary key (feed_id, fare_id)
 );
-create index if not exists ix_stop_offsets_trip_id on stop_offsets(feed_id, trip_id);
+-- create index if not exists ix_fare_attributes_fare_id on fare_attributes(feed_id, fare_id);
+
+
+create table fare_rules (
+  feed_id smallint not null,
+  fare_id varchar(63) not null,
+  route_id varchar(63) not null,
+  origin_id varchar(63),
+  destination_id varchar(63),
+  constraint fk_fare_rules_fare_id foreign key (feed_id, fare_id) references fare_attributes(feed_id, fare_id) on delete cascade on update cascade,
+  constraint fk_fare_rules_route_id foreign key (feed_id, route_id) references routes(feed_id, route_id) on delete cascade on update cascade
+);
+-- create index if not exists ix_fare_rules_zone_id on fare_rules(feed_id, fare_id, origine_id, destination_id);
+
+
+create table translations (
+  feed_id integer not null,
+  language text not null check (language in ('ja', 'ja-Hrkt', 'en')), -- 言語
+  translation_type text not null check (translation_type in ('stop_name')),
+  translation text not null, -- 翻訳先
+  record_id text not null,
+  primary key (feed_id, language, translation_type, record_id)
+);
+-- create index if not exists ix_translations_zone_id on translations(feed_id, fare_id, origine_id, destination_id);

@@ -1,5 +1,7 @@
 create schema if not exists r;
 
+-- 京王,都営
+
 -- feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version,feed_contact_email,feed_contact_url
 -- feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version
 drop table if exists r.feed_info cascade;
@@ -128,7 +130,8 @@ create table r.stops (
   stop_timezone varchar(15),
   wheelchair_boarding integer check (wheelchair_boarding in (0, 1, 2)),
   level_id varchar(255),
-  platform_code varchar(255)
+  platform_code varchar(255),
+  stop_access integer
 );
 
 -- trip_id,arrival_time,departure_time,stop_id,stop_sequence,stop_headsign,pickup_type,drop_off_type,shape_dist_traveled,timepoint
@@ -148,6 +151,53 @@ create table r.stop_times (
   timepoint integer
 );
 
+
+-- fare_id,price,ic_price,currency_type,payment_method,transfers,transfer_duration
+drop table if exists r.fare_attributes cascade;
+create table r.fare_attributes (
+  feed_id integer,
+  fare_id varchar(63),
+  price float not null,
+  ic_price float,
+  currency_type varchar(15) not null, -- 通貨
+  payment_method integer not null check (payment_method in (0, 1)), -- 後払い, 先払い
+  transfers integer,
+  transfer_duration integer, -- 乗り換え可能時間
+  agency_id varchar(63)
+);
+
+
+-- fare_id,route_id,origin_id,destination_id,contains_id
+drop table if exists r.fare_rules cascade;
+create table r.fare_rules (
+  feed_id integer,
+  fare_id varchar(63) not null,
+  route_id varchar(63) not null,
+  origin_id varchar(63),
+  destination_id varchar(63),
+  contains_id varchar(63) -- 不使用
+);
+
+-- table_name,field_name,language,translation,record_id,record_sub_id,field_value
+-- table_name,field_name,language,translation,record_id,record_sub_id,field_value
+drop table if exists r.translations cascade;
+create table r.translations (
+  feed_id integer,
+  table_name varchar(63) not null,
+  field_name varchar(63) not null,
+  language varchar(15) not null, -- 言語
+  translation varchar(255) not null, -- 翻訳先
+  record_id varchar(63) not null,
+  record_sub_id varchar(63) not null,
+  field_value varchar(255) not null -- 翻訳元
+);
+
+
+
+
+
+
+
 -- feed_id設定 必ず実行
 drop function if exists r.feed_ider(integer) cascade;
 create function r.feed_ider(integer) returns void as $$
@@ -160,6 +210,9 @@ create function r.feed_ider(integer) returns void as $$
   update r.trips set feed_id = $1;
   update r.stops set feed_id = $1;
   update r.stop_times set feed_id = $1;
+  update r.fare_attributes set feed_id = $1;
+  update r.fare_rules set feed_id = $1;
+  update r.translations set feed_id = $1;
 $$ language sql;
 
 drop function if exists r.to_second(varchar(8));
