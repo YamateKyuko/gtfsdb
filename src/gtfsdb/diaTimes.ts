@@ -16,11 +16,11 @@ const api = new dbAPI<{
     } = reqObj;
 
     const { results } = await db.prepare(`
-      select
-        json_object(
-          'trips', json_group_array(trp)
-        ) as obj
-      from (
+      -- select
+        -- json_object(
+          -- 'trips', json_group_array(trp)
+        -- ) as obj
+      -- from (
         select 
           json_object(
             'feed_id', feed_id,
@@ -49,7 +49,7 @@ const api = new dbAPI<{
           feed_id,
           trip_id,
           stop_sequence
-      );
+      -- );
       `,
     )
       .bind(...[patternId, date])
@@ -58,7 +58,9 @@ const api = new dbAPI<{
     
     if (!results) return Response.json([]);
     
-    return Response.json({txt: results});
+    return Response.json({
+      trips: results.map((r) => {JSON.parse(r.trp as string)})
+    });
   },
 });
 
