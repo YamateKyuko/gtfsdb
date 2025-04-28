@@ -17,7 +17,7 @@ const api = new dbAPI<{
 
     const { results } = await db.prepare(`
       select
-      json_group_array(arr) as results
+        json_group_array(arr) as results
       from (
         select 
           json_group_array(
