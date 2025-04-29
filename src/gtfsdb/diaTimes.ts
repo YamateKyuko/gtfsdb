@@ -38,8 +38,8 @@ with trps as (
   inner join stop_patterns using (feed_id, pattern_id, stop_sequence)
   inner join trips using (feed_id, trip_id)
   WHERE 
-    tim.pattern_id = 1 and
-    service_id in (select service_id from calendar where date = '2025-04-28')
+    tim.pattern_id = $1 and
+    service_id in (select service_id from calendar where date = $2)
   group by feed_id, trip_id
   order by
     feed_id,
@@ -62,7 +62,7 @@ ptns as (
       'platform_code', platform_code
     ) as ptn
   from stop_patterns
-  where pattern_id = 1
+  where pattern_id = $1
 )
 select
   json_object(
