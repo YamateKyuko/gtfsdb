@@ -58,7 +58,7 @@ ptns as (
       'stop_id', stop_id,
       'stop_name', stop_name,
       'stop_headsign', stop_headsign,
-      'offset_time', offset_time,
+      'offset_time', ifnull(offset_time, 0),
       'platform_code', platform_code
     ) as ptn
   from stop_patterns
