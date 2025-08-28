@@ -17,7 +17,7 @@ CREATE TABLE map.edges (
     geom geometry,
     old_id BIGINT,
     type varchar(16),
-    multiplier float DEFAULT 1.0,
+    multiplier float not null,
     pattern_id integer,
     feed_id integer,
     route_id varchar(256),
@@ -70,7 +70,9 @@ do $$
 
     stp1 record;
     stp2 record;
-    bdist float := 0.001; -- バッファ距離
+    bdist float := 0.0005; -- バッファ距離
+
+    lengthMultiplier float := 100000;
 
     svids integer[];
     evids integer[];
@@ -78,7 +80,8 @@ do $$
     shortest record;
   begin 
 
-  select 0.001 into bdist;
+  select 0.0005 into bdist;
+  select 100000 into lengthMultiplier;
 
     for ptn1 in (
       select *
@@ -87,7 +90,7 @@ do $$
       --   -- '府７５'
       --   '武７１'
       -- )
-      where pattern_id in (410, 411)
+      where pattern_id in (410, 411, 412, 413)
     ) loop
 
       -- 路線
@@ -129,8 +132,8 @@ do $$
       )
       select 
         *,
-        st_length(geom) as cost,
-        st_length(geom) as reverse_cost,
+        st_length(geom) * lengthMultiplier as cost,
+        st_length(geom) * lengthMultiplier as reverse_cost,
         1.00 as multiplier
       from lines;
 
@@ -138,14 +141,15 @@ do $$
       update
         map.edges
       set
-        (multiplier, type) = (map.edges.multiplier * 100, 'aaa')
+        (multiplier, type) = (map.edges.multiplier * 10000, 'aaa')
       from map.results
       where
-        map.edges.pattern_id = pptn and
+        -- ((map.edges.pattern_id = pptn and type in ('外郭', '分割')) or 
+        -- (map.edges.pattern_id = ptn1.pattern_id and type = '路線')) and
         st_dwithin(
           map.results.geom,
           map.edges.geom,
-          bdist*0.5
+          bdist*0.75
         );
       
 
@@ -182,37 +186,40 @@ do $$
       )
       insert into map.edges (
         old_id,
-        -- id,
-        geom
+        geom,
+        multiplier,
+        type
       )
       SELECT
         row_number() over()::integer as seq,
-        -- id1::bigint,
-        -- path[1],
-        geom
+        geom,
+        1000000000,
+        '重分割'
       FROM collection;
 
       -- 交差エッジ分割
-      insert into map.edges (old_id, geom, type)
-      select id, geom, '分割'
-      from pgr_separateCrossing('SELECT id, geom FROM map.edges', 0.00001);
+      insert into map.edges (old_id, geom, type, multiplier)
+      select id, geom, '分割', 1000000000
+      from pgr_separateCrossing('SELECT id, geom FROM map.edges', 0.0000001);
 
-      update map.edges set () = ()
-      from map.edges
-      where
-      map.edges.old_id is not null;
+      -- update map.edges as e1 set () = ()
+      -- from map.edges as e2
+      -- where
+      -- e1.old_id is not null and
+      -- e1.old_id = e2.id;
 
       -- 新規エッジ通過コスト挿入
       with costs as (
         select
           e2.id,
-          ST_Length(e2.geom) as cost,
-          ST_Length(e2.geom) as reverse_cost
-        from map.edges as e1 
+          ST_Length(e2.geom) * lengthMultiplier as cost,
+          ST_Length(e2.geom) * lengthMultiplier as reverse_cost,
+          e1.multiplier -- 分割元から取得
+        from map.edges as e1
         inner join map.edges as e2 on (e1.id = e2.old_id)
       )
       UPDATE map.edges e
-      SET (cost, reverse_cost) = (c.cost, c.reverse_cost)
+      SET (cost, reverse_cost, old_id, multiplier) = (c.cost, c.reverse_cost, null, c.multiplier)
       FROM costs AS c WHERE e.id = c.id;
 
       -- 不足する頂点を新規に作成
@@ -353,7 +360,8 @@ do $$
         geom,
         deg,
         cost,
-        reverse_cost
+        reverse_cost,
+        multiplier
       )
       with segm as (
         select
@@ -373,8 +381,9 @@ do $$
         route_id,
         geom as geom,
         st_azimuth(st_startpoint(geom), st_endpoint(geom)) as deg,
-        st_length(geom) as cost,
-        st_length(geom) as reverse_cost
+        st_length(geom) * lengthMultiplier as cost,
+        st_length(geom) * lengthMultiplier as reverse_cost,
+        multiplier
       from segm;
 
 
@@ -403,3 +412,6 @@ select * from map.results;
 --   -- true -- return path
 -- ) as route
 -- inner join map.edges on (edge = map.edges.id);
+
+
+select * from map.edges;
