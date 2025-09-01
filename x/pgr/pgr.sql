@@ -6,8 +6,8 @@ CREATE TABLE map.edges (
     id integer generated always as IDENTITY,
     source BIGINT,
     target BIGINT,
-    cost FLOAT,
-    reverse_cost FLOAT,
+    cost FLOAT not null,
+    reverse_cost FLOAT not null,
     capacity BIGINT DEFAULT 100,
     reverse_capacity BIGINT DEFAULT 100,
     x1 FLOAT,
@@ -52,8 +52,12 @@ create table map.results (
   route_id varchar(256)
 );
 
-
-
+drop table if exists map.pts;
+create table map.pts (
+  geom geometry(Point, 4326),
+  type varchar(63),
+  pattern_id integer
+);
 
 
 
@@ -90,7 +94,7 @@ do $$
       --   -- '府７５'
       --   '武７１'
       -- )
-      where pattern_id in (410, 411, 412, 413)
+      where pattern_id in (410, 411, 412, 413, 414)
     ) loop
 
       -- 路線
@@ -188,25 +192,23 @@ do $$
         old_id,
         geom,
         multiplier,
-        type
+        type,
+        cost,
+        reverse_cost
       )
       SELECT
         row_number() over()::integer as seq,
         geom,
         1000000000,
-        '重分割'
+        '重分割',
+        1,
+        1
       FROM collection;
 
       -- 交差エッジ分割
-      insert into map.edges (old_id, geom, type, multiplier)
-      select id, geom, '分割', 1000000000
+      insert into map.edges (old_id, geom, type, multiplier, cost, reverse_cost)
+      select id, geom, '分割', 1000000000, 1, 1
       from pgr_separateCrossing('SELECT id, geom FROM map.edges', 0.0000001);
-
-      -- update map.edges as e1 set () = ()
-      -- from map.edges as e2
-      -- where
-      -- e1.old_id is not null and
-      -- e1.old_id = e2.id;
 
       -- 新規エッジ通過コスト挿入
       with costs as (
@@ -219,14 +221,12 @@ do $$
         inner join map.edges as e2 on (e1.id = e2.old_id)
       )
       UPDATE map.edges e
-      SET (cost, reverse_cost, old_id, multiplier) = (c.cost, c.reverse_cost, null, c.multiplier)
+      SET (cost, reverse_cost, multiplier) = (c.cost, c.reverse_cost, c.multiplier)
       FROM costs AS c WHERE e.id = c.id;
 
       -- 不足する頂点を新規に作成
       with new_vertex as (
         select ev.*
-        -- from pgr_extractvertices('SELECT id, geom FROM map.edges WHERE old_id IS NOT NULL') ev
-
         from pgr_extractVertices('select id, geom from map.edges where source is null or target is null') ev
         left join map.vertices v using(geom)
         where v is null
@@ -252,8 +252,9 @@ do $$
       from map.vertices as v
       where target is null and ST_EndPoint(e.geom) = v.geom;
 
-
-
+      
+      delete from map.edges where id in (select old_id from map.edges where old_id is not null);
+      update map.edges set old_id = null where old_id is not null;
 
       for stp1 in (select * from stop_patterns where pattern_id = ptn1.pattern_id) loop
 
@@ -290,7 +291,7 @@ do $$
         where st_dwithin(
           (select point from ending),
           geom,
-          bdist * 2
+          bdist * 5
         );
 
 
@@ -305,9 +306,14 @@ do $$
         order by agg_cost asc
         limit 1;
 
+        -- select shortest.cost 
+
+        -- select geom as sg from map.vertices where id = shortest.start_vid;
+        -- select geom as eg from map.vertices where id = shortest.end_vid;
 
         -- raise notice '%', shortest;
         select array[shortest.end_vid] into svids;
+        insert into map.pts (geom, pattern_id) select geom, ptn1.pattern_id from map.vertices where id = shortest.end_vid;
 
         -- svid_set as (select [costlist.end_vid]::integer[] into svids from costlist)
 
@@ -366,25 +372,44 @@ do $$
       with segm as (
         select
           '外郭' as type,
-          pattern_id,
-          route_id,
-          feed_id,
-          ((st_dumpsegments(st_buffer(geom, bdist, 1))).geom) as geom,
-          0.75 as multiplier 
+          ptn1.pattern_id as pattern_id,
+          0.75 as multiplier,
+          ((st_dumpsegments(
+            st_buffer(
+              st_linemerge(st_collect(geom))
+            , bdist, 'quad_segs=1 join=mitre mitre_limit=5.0')
+          )).geom) as geom
         from map.results
-        where pattern_id = ptn1.pattern_id
+        where map.results.pattern_id = ptn1.pattern_id
+      ),
+      aaa as (
+        select
+          '外郭' as type,
+          ptn1.pattern_id as pattern_id,
+          0.75 as multiplier,
+          ((st_dumpsegments(
+            st_buffer(geom, bdist, 'quad_segs=1 join=mitre mitre_limit=5.0 endcap=flat')
+          )).geom) as geom
+        from map.results
+        where map.results.pattern_id = ptn1.pattern_id
+      ),
+      bbb as (
+        select * from segm
+        -- union
+        -- select * from aaa
       )
       select
-        type,
-        segm.pattern_id,
+        segm.type,
+        pattern_id,
         feed_id,
         route_id,
-        geom as geom,
+        geom,
         st_azimuth(st_startpoint(geom), st_endpoint(geom)) as deg,
         st_length(geom) * lengthMultiplier as cost,
         st_length(geom) * lengthMultiplier as reverse_cost,
-        multiplier
-      from segm;
+        segm.multiplier
+      from bbb as segm
+      inner join trip_patterns using(pattern_id);
 
 
       select ptn1.pattern_id into pptn;
