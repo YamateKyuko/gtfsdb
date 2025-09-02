@@ -1,13 +1,16 @@
 drop table if exists map.edges;
+
 drop table if exists map.vertices;
+
 drop table if exists map.results;
 
-CREATE TABLE map.edges (
+CREATE TABLE
+  map.edges (
     id integer generated always as IDENTITY,
     source BIGINT,
     target BIGINT,
     cost FLOAT not null,
-    reverse_cost FLOAT not null,
+    -- reverse_cost FLOAT not null,
     capacity BIGINT DEFAULT 100,
     reverse_capacity BIGINT DEFAULT 100,
     x1 FLOAT,
@@ -24,48 +27,43 @@ CREATE TABLE map.edges (
     -- p1 geometry(Point, 4326),
     -- p2 geometry(Point, 4326),
     deg float
+  );
 
-);
+create table
+  map.vertices (
+    id integer generated always as IDENTITY,
+    in_edges BIGINT[],
+    out_edges BIGINT[],
+    x FLOAT,
+    y FLOAT,
+    geom geometry
+  );
 
-create table map.vertices (
-  id integer generated always as IDENTITY,
-  in_edges BIGINT[],
-  out_edges BIGINT[],
-  x FLOAT,
-  y FLOAT,
-  geom geometry
-);
-
-create table map.results (
-  seq integer,
-  path_seq integer,
-  start_vid integer,
-  end_vid integer,
-  node integer,
-  edge integer,
-  cost float,
-  agg_cost float,
-  geom geometry,
-  sequence integer,
-  pattern_id integer,
-  feed_id integer,
-  route_id varchar(256)
-);
+create table
+  map.results (
+    seq integer,
+    path_seq integer,
+    start_vid integer,
+    end_vid integer,
+    node integer,
+    edge integer,
+    cost float,
+    agg_cost float,
+    geom geometry,
+    sequence integer,
+    pattern_id integer,
+    feed_id integer,
+    route_id varchar(256)
+  );
 
 drop table if exists map.pts;
-create table map.pts (
-  geom geometry(Point, 4326),
-  type varchar(63),
-  pattern_id integer
-);
 
-
-
-
-
-
-
-
+create table
+  map.pts (
+    geom geometry (Point, 4326),
+    type varchar(63),
+    pattern_id integer
+  );
 
 do $$
   declare 
@@ -82,7 +80,12 @@ do $$
     evids integer[];
 
     shortest record;
-  begin 
+
+
+    nid record;
+
+    bool boolean;
+  begin
 
   select 0.0005 into bdist;
   select 100000 into lengthMultiplier;
@@ -106,7 +109,7 @@ do $$
         geom,
         deg,
         cost,
-        reverse_cost,
+        -- reverse_cost,
         multiplier
       )
       with points as (
@@ -137,7 +140,7 @@ do $$
       select 
         *,
         st_length(geom) * lengthMultiplier as cost,
-        st_length(geom) * lengthMultiplier as reverse_cost,
+        -- st_length(geom) * lengthMultiplier as reverse_cost,
         1.00 as multiplier
       from lines;
 
@@ -162,6 +165,14 @@ do $$
       -- エッジ処理
 
       -- 重複エッジ分割
+      insert into map.edges (
+        old_id,
+        geom,
+        multiplier,
+        type,
+        cost
+        -- reverse_cost
+      )
       with edges_table as (
         select id, geom from map.edges
       ), 
@@ -188,26 +199,24 @@ do $$
         SELECT id1, (st_dump(st_split(st_snap(g1, blade, 0.01), blade))).*
         FROM blades
       )
-      insert into map.edges (
-        old_id,
-        geom,
-        multiplier,
-        type,
-        cost,
-        reverse_cost
-      )
       SELECT
         row_number() over()::integer as seq,
         geom,
         1000000000,
         '重分割',
-        1,
         1
-      FROM collection;
+      from collection;
 
       -- 交差エッジ分割
-      insert into map.edges (old_id, geom, type, multiplier, cost, reverse_cost)
-      select id, geom, '分割', 1000000000, 1, 1
+      insert into map.edges (
+        old_id,
+        geom,
+        type,
+        multiplier,
+        cost
+        -- reverse_cost
+      )
+      select id, geom, '分割', 100000000, 1
       from pgr_separateCrossing('SELECT id, geom FROM map.edges', 0.0000001);
 
       -- 新規エッジ通過コスト挿入
@@ -215,13 +224,20 @@ do $$
         select
           e2.id,
           ST_Length(e2.geom) * lengthMultiplier as cost,
-          ST_Length(e2.geom) * lengthMultiplier as reverse_cost,
+          -- ST_Length(e2.geom) * lengthMultiplier as reverse_cost,
           e1.multiplier -- 分割元から取得
         from map.edges as e1
         inner join map.edges as e2 on (e1.id = e2.old_id)
       )
-      UPDATE map.edges e
-      SET (cost, reverse_cost, multiplier) = (c.cost, c.reverse_cost, c.multiplier)
+      UPDATE map.edges as e SET (
+        cost,
+        -- reverse_cost,
+        multiplier
+      ) = (
+        c.cost,
+        -- c.reverse_cost,
+        c.multiplier
+      )
       FROM costs AS c WHERE e.id = c.id;
 
       -- 不足する頂点を新規に作成
@@ -299,7 +315,7 @@ do $$
         select *
         into strict shortest
         from pgr_bdDijkstracost(
-          'SELECT id, source, target, cost * multiplier as cost, (reverse_cost * multiplier), capacity, reverse_capacity FROM map.edges',
+          'SELECT id, source, target, cost * multiplier as cost, (cost * multiplier), capacity, reverse_capacity FROM map.edges',
           svids,
           evids
         )
@@ -347,11 +363,95 @@ do $$
           stp1.feed_id,
           stp1.route_id
         from pgr_bdDijkstra(
-          'SELECT id, source, target, (cost * multiplier) as cost, reverse_cost * multiplier, capacity, reverse_capacity FROM map.edges',
+          'SELECT id, source, target, (cost * multiplier) as cost, cost * multiplier, capacity, reverse_capacity FROM map.edges',
           (select shortest.start_vid), -- 出発点の頂点ID
           (select shortest.end_vid) -- 到着点の頂点ID
         ) as res
         inner join map.edges on (edge = map.edges.id);
+
+        if (
+          select
+            case when count(*) >= 3 then true
+            else false end
+          from map.results
+          where
+            pattern_id = ptn1.pattern_id and
+            sequence = stp1.stop_sequence
+        ) then
+          with reses as (
+            select * from map.results where pattern_id = ptn1.pattern_id and sequence = stp1.stop_sequence
+          ),
+          aggcost as (
+            select sum(cost) as l from reses
+          ),
+          shortestlength as (
+            select
+              st_distance(
+                (select geom from map.vertices where id = shortest.start_vid),
+                (select geom from map.vertices where id = shortest.end_vid)
+              ) * lengthMultiplier as l
+          )
+          select ((select l from shortestlength) * 100 < (select l from aggcost)) into bool;
+          if (bool) then
+            delete from map.results where pattern_id = ptn1.pattern_id and sequence = stp1.stop_sequence;
+            insert into map.edges (
+              type,
+              pattern_id,
+              feed_id,
+              route_id,
+              geom,
+              cost,
+              -- reverse_cost,
+              multiplier,
+              source,
+              target
+            )
+            select
+              '短絡' as type,
+              ptn1.pattern_id,
+              ptn1.feed_id,
+              ptn1.route_id,
+              geom,
+              st_length(geom) * lengthmultiplier,
+              1 as multiplier,
+              shortest.start_vid,
+              shortest.end_vid
+            from (
+              select st_makeline(
+                (select geom from map.vertices where id = shortest.start_vid),
+                (select geom from map.vertices where id = shortest.end_vid)
+              ) as geom
+            )
+            returning * into nid;
+
+            insert into map.results (
+              seq,
+              path_seq,
+              node,
+              edge,
+              cost,
+              agg_cost,
+              geom,
+              sequence,
+              pattern_id,
+              feed_id,
+              route_id
+            )
+            select
+              null as seq,
+              null as path_seq,
+              shortest.start_vid,
+              nid.id,
+              nid.cost,
+              0,
+              nid.geom,
+              stp1.stop_sequence,
+              stp1.pattern_id,
+              stp1.feed_id,
+              stp1.route_id
+            ;
+          end if;
+        end if;
 
         select stp1 into stp2;
       end loop;
@@ -366,7 +466,7 @@ do $$
         geom,
         deg,
         cost,
-        reverse_cost,
+        -- reverse_cost,
         multiplier
       )
       with segm as (
@@ -406,9 +506,9 @@ do $$
         geom,
         st_azimuth(st_startpoint(geom), st_endpoint(geom)) as deg,
         st_length(geom) * lengthMultiplier as cost,
-        st_length(geom) * lengthMultiplier as reverse_cost,
+        -- st_length(geom) * lengthMultiplier as reverse_cost,
         segm.multiplier
-      from bbb as segm
+      from segm
       inner join trip_patterns using(pattern_id);
 
 
@@ -418,13 +518,13 @@ do $$
 $$;
 
 -- select * , st_astext(geom) from map.edges;
-
 -- select * from map.edges where id = 23;
+select
+  *
+from
+  map.results;
 
-select * from map.results;
 -- select * from map.results;
-
-
 -- delete from map.results;
 -- insert into map.results (seq, path_seq, end_vid)
 -- select route.*, geom from pgr_bdDijkstra(
@@ -437,6 +537,7 @@ select * from map.results;
 --   -- true -- return path
 -- ) as route
 -- inner join map.edges on (edge = map.edges.id);
-
-
-select * from map.edges;
+select
+  *
+from
+  map.edges;
