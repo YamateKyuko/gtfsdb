@@ -51,7 +51,8 @@ create table
     sequence integer,
     pattern_id integer,
     feed_id integer,
-    route_id varchar(256)
+    route_id varchar(256),
+    length float
   );
 
 drop table if exists map.pts;
@@ -136,7 +137,7 @@ do $$
       )
       select 
         *,
-        st_length(geom) * lengthMultiplier as cost,
+        st_length(geom) * lengthMultiplier as length,
         1.00 as multiplier
       from lines;
 
@@ -339,7 +340,8 @@ do $$
           sequence,
           pattern_id,
           feed_id,
-          route_id
+          route_id,
+          length
         )
         select
           seq,
@@ -354,7 +356,8 @@ do $$
           stp1.stop_sequence,
           stp1.pattern_id,
           stp1.feed_id,
-          stp1.route_id
+          stp1.route_id,
+          map.edges.length
         from pgr_bdDijkstra(
           'SELECT id, source, target, (length * multiplier) as cost, length * multiplier, capacity, reverse_capacity FROM map.edges',
           (select shortest.start_vid), -- 出発点の頂点ID
@@ -375,7 +378,7 @@ do $$
             select * from map.results where pattern_id = ptn1.pattern_id and sequence = stp1.stop_sequence
           ),
           aggcost as (
-            select sum(cost) as l from reses
+            select sum(length) as l from reses
           ),
           shortestlength as (
             select
@@ -404,7 +407,7 @@ do $$
               ptn1.feed_id,
               ptn1.route_id,
               geom,
-              st_length(geom) * lengthmultiplier,
+              st_length(geom) * lengthmultiplier as length,
               1 as multiplier,
               shortest.start_vid,
               shortest.end_vid
@@ -427,20 +430,22 @@ do $$
               sequence,
               pattern_id,
               feed_id,
-              route_id
+              route_id,
+              length
             )
             select
               null as seq,
               null as path_seq,
               shortest.start_vid,
               nid.id,
-              nid.cost,
+              nid.length,
               0,
               nid.geom,
               stp1.stop_sequence,
               stp1.pattern_id,
               stp1.feed_id,
-              stp1.route_id
+              stp1.route_id,
+              nid.length
             ;
           end if;
         end if;
@@ -495,7 +500,7 @@ do $$
         route_id,
         geom,
         st_azimuth(st_startpoint(geom), st_endpoint(geom)) as deg,
-        st_length(geom) * lengthMultiplier as cost,
+        st_length(geom) * lengthMultiplier as length,
         segm.multiplier
       from segm
       inner join trip_patterns using(pattern_id);
