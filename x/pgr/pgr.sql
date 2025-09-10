@@ -1,3 +1,13 @@
+/*
+  見やすいバス路線図制作クエリ
+    ダイクストラ法を用いて各辺にコストを設定し、
+    同じ道路を通るバス路線が重ならずに見やすく表示されるようにします。
+
+    by Yamakyu
+*/
+
+
+-- #region テーブル定義
 drop table if exists map.edges;
 
 drop table if exists map.vertices;
@@ -64,22 +74,24 @@ create table
     pattern_id integer
   );
 
-do $$
-  declare 
-    ptn1 record;
-    pptn integer;
+-- #endregion 
 
-    stp1 record;
+do $$
+  -- 変数定義
+  declare 
+    ptn1 record;  -- パターン用
+    pptn integer;  -- 前のパターンid
+
+    stp1 record;  
     stp2 record;
     bdist float := 0.0005; -- バッファ距離
 
-    lengthMultiplier float := 100000;
+    lengthMultiplier float := 100000; ｰｰ st_lengthで出た値に必ずかけること。
 
     svids integer[];
     evids integer[];
 
     shortest record;
-
 
     nid record;
 
@@ -89,6 +101,9 @@ do $$
   select 0.0005 into bdist;
   select 100000 into lengthMultiplier;
 
+    /*
+      パターンごとに繰り返し
+    */
     for ptn1 in (
       select *
       from trip_patterns
@@ -100,7 +115,7 @@ do $$
     ) loop
       raise notice 'pattern_id: %', ptn1.pattern_id;
 
-      -- 路線
+      -- 元の路線を辺リストに挿入
       insert into map.edges (
         type,
         pattern_id,
