@@ -115,7 +115,7 @@ do $$
     ) loop
       raise notice 'pattern_id: %', ptn1.pattern_id;
 
-      -- 元の路線を辺リストに挿入
+      -- #region 元の路線を辺リストに挿入
       insert into map.edges (
         type,
         pattern_id,
@@ -156,9 +156,10 @@ do $$
         st_length(geom) * lengthMultiplier as length,
         1.00 as multiplier
       from lines;
+      -- #endregion
 
 
-      
+      -- #region 同じ系統のバス路線は同じ場所を走らせる
       -- with reses as (select edge as id from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id)
       -- update map.edges set indivmultiplier = 0.0000000000001 where id in (select id from reses);
       with geoms as (select st_collect(geom) as g from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id)
@@ -167,6 +168,7 @@ do $$
         map.edges.geom,
         bdist*0.5
       );
+      -- #endregion
 
 
       -- update map.edges set type = 'aanpafo' where id in (select id from reses);
@@ -175,7 +177,7 @@ do $$
       -- raise notice '%', (select array_to_string(array_agg(id::text), '-', '*') from (select edge as id from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id));
 
 
-
+      -- #region 決定した路線の周辺のエッジを通さないようにする
       update
         map.edges
       set
@@ -190,15 +192,18 @@ do $$
           map.edges.geom,
           bdist*0.5
         );
+      -- #endregion
 
       
       
 
       
 
-      -- エッジ処理
+      /*
+        ダイクストラにかけるエッジの前処理
+      */
 
-      -- 重複エッジ分割
+      -- #region 重複エッジ分割
       insert into map.edges (
         old_id,
         geom,
@@ -239,8 +244,9 @@ do $$
         '重分割',
         1
       from collection;
+      -- #endregion
 
-      -- 交差エッジ分割
+      -- #region 交差エッジ分割
       insert into map.edges (
         old_id,
         geom,
@@ -250,11 +256,9 @@ do $$
       )
       select id, geom, '分割', 100000000, 1
       from pgr_separateCrossing('SELECT id, geom FROM map.edges', 0.0000001);
+      -- #endregion
 
-
-
-
-      -- 新規エッジ通過コスト挿入
+      -- #region 新規エッジ通過コスト挿入
       with costs as (
         select
           e2.id,
@@ -272,8 +276,9 @@ do $$
         c.multiplier
       )
       FROM costs AS c WHERE e.id = c.id;
+      -- #endregion
 
-      -- 不足する頂点を新規に作成
+      -- #region 不足する頂点を新規に作成
       with new_vertex as (
         select ev.*
         from pgr_extractVertices('select id, geom from map.edges where source is null or target is null') ev
@@ -282,16 +287,18 @@ do $$
       )
       insert into map.vertices (in_edges, out_edges, x, y, geom)
       select in_edges, out_edges,x,y,geom from new_vertex;
+      -- #endregion
 
-      -- エッジ始点側頂点情報更新
+      -- #region エッジ始点側頂点情報更新
       update map.edges as e
       set
         source = v.id,
         x1 = x,
         y1 = y      from map.vertices as v
       where source is null and ST_StartPoint(e.geom) = v.geom;
+      -- #endregion
 
-      -- エッジ終点側頂点情報更新
+      -- #region エッジ終点側頂点情報更新
       update map.edges as e
       set
         target = v.id,
@@ -299,15 +306,18 @@ do $$
         y2 = y
       from map.vertices as v
       where target is null and ST_EndPoint(e.geom) = v.geom;
+      -- #endregion
 
-      -- 処理済みのedgeの元を削除して軽量化
+      -- 分割などが行われたエッジの元を削除して軽量化
       delete from map.edges where id in (select old_id from map.edges where old_id is not null);
-      -- 処理済み判別用のidを削除
+      -- 前処理済みエッジの判別に使うold_idを削除
       update map.edges set old_id = null where old_id is not null;
 
 
 
-
+      /*
+        各バス停間ごとにダイクストラ法で経路を求める
+      */
 
       for stp1 in (select * from stop_patterns where pattern_id = ptn1.pattern_id) loop
         raise notice '  stop_sequence: %', stp1.stop_sequence;
