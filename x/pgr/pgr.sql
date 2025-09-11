@@ -194,6 +194,23 @@ do $$
         );
       -- #endregion
 
+      -- #region 決定した路線の周辺のエッジを通さないようにする
+      update
+        map.edges
+      set
+        (multiplier, type) = (map.edges.multiplier * 10000 * abs(sin(st_angle(map.edges.geom, map.results.geom))), 'aaa')
+      from map.results
+      where
+        (map.results.pattern_id = pptn) and
+        -- ((map.edges.pattern_id = pptn and type in ('外郭', '分割')) or 
+        -- (map.edges.pattern_id = ptn1.pattern_id and type = '路線')) and
+        st_dwithin(
+          map.results.geom,
+          map.edges.geom,
+          bdist*0.5
+        );
+      -- #endregion
+
       
       
 
