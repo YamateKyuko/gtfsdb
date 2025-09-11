@@ -178,7 +178,9 @@ gtfsdb_backup.sql
 .dev.vars
 
 x/impt.sh
-x/impt.cmd
+x/bats/impt.cmd
+
+impt.*
 
 unzipped
 
