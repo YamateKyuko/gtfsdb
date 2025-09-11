@@ -562,9 +562,9 @@ do $$
           ptn1.pattern_id as pattern_id,
           0.75 as multiplier,
           ((st_dumpsegments(
-            st_buffer(
+            st_forcepolygoncw(st_buffer(
               st_linemerge(st_collect(geom))
-            , bdist, 'quad_segs=1 join=mitre mitre_limit=5.0')
+            , bdist, 'quad_segs=1 join=mitre mitre_limit=5.0'))
           )).geom) as geom
         from map.results
         where map.results.pattern_id = ptn1.pattern_id
@@ -575,7 +575,7 @@ do $$
           ptn1.pattern_id as pattern_id,
           0.75 as multiplier,
           ((st_dumpsegments(
-            st_buffer(geom, bdist, 'quad_segs=1 join=mitre mitre_limit=5.0 endcap=flat')
+            st_forcepolygoncw(st_buffer(geom, bdist, 'quad_segs=1 join=mitre mitre_limit=5.0 endcap=flat'))
           )).geom) as geom
         from map.results
         where map.results.pattern_id = ptn1.pattern_id
