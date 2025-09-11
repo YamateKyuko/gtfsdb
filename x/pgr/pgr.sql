@@ -115,6 +115,11 @@ do $$
     ) loop
       raise notice 'pattern_id: %', ptn1.pattern_id;
 
+      /*
+        エッジをテーブルに挿入しコストをいじる
+      */
+      -- #region
+
       -- #region 元の路線を辺リストに挿入
       insert into map.edges (
         type,
@@ -176,12 +181,20 @@ do $$
       -- raise notice '%', (select array_to_string(array_agg(id::text), '-', '*') from map.edges where not indivmultiplier = 1);
       -- raise notice '%', (select array_to_string(array_agg(id::text), '-', '*') from (select edge as id from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id));
 
-
       -- #region 決定した路線の周辺のエッジを通さないようにする
       update
         map.edges
       set
-        (multiplier, type) = (map.edges.multiplier * 10000, 'aaa')
+        (multiplier, type) = (
+          (map.edges.multiplier * 100) + (
+            map.edges.multiplier *
+            10000 *
+            abs(sin(st_angle(
+              map.edges.geom,
+              map.results.geom
+          )))),
+          'aaa'
+        )
       from map.results
       where
         (map.results.pattern_id = pptn) and
@@ -194,24 +207,7 @@ do $$
         );
       -- #endregion
 
-      -- #region 決定した路線の周辺のエッジを通さないようにする
-      update
-        map.edges
-      set
-        (multiplier, type) = (map.edges.multiplier * 10000 * abs(sin(st_angle(map.edges.geom, map.results.geom))), 'aaa')
-      from map.results
-      where
-        (map.results.pattern_id = pptn) and
-        -- ((map.edges.pattern_id = pptn and type in ('外郭', '分割')) or 
-        -- (map.edges.pattern_id = ptn1.pattern_id and type = '路線')) and
-        st_dwithin(
-          map.results.geom,
-          map.edges.geom,
-          bdist*0.5
-        );
       -- #endregion
-
-      
       
 
       
@@ -219,6 +215,7 @@ do $$
       /*
         ダイクストラにかけるエッジの前処理
       */
+      -- #region
 
       -- #region 重複エッジ分割
       insert into map.edges (
@@ -330,6 +327,7 @@ do $$
       -- 前処理済みエッジの判別に使うold_idを削除
       update map.edges set old_id = null where old_id is not null;
 
+      -- #endregion
 
 
       /*
@@ -338,6 +336,8 @@ do $$
 
       for stp1 in (select * from stop_patterns where pattern_id = ptn1.pattern_id) loop
         raise notice '  stop_sequence: %', stp1.stop_sequence;
+
+        -- #region 起点側バス停を取得
         if (stp1.stop_sequence = 1) then 
           -- 最初のバス停は処理せず次から
           continue;
@@ -364,9 +364,10 @@ do $$
             bdist * 0.5
           );
         end if;
+        -- #endregion
 
 
-
+        -- #region 終点側バス停を取得
         with ending as (
           select st_point(stop_lon, stop_lat, 4326) as point
           from stops
@@ -386,9 +387,10 @@ do $$
           map.vertices.geom,
           bdist * 0.5
         );
+        -- #endregion
 
 
-        
+        -- #region 各バス停間ごとに最短経路を求める
         select *
         into strict shortest
         from pgr_bdDijkstracost(
@@ -398,6 +400,8 @@ do $$
         )
         order by agg_cost asc
         limit 1;
+        --#endregion
+
         -- raise notice '--%', shortest.agg_cost;
         raise notice '--%', (select indivmultiplier from map.edges order by indivmultiplier asc limit 1);
 
