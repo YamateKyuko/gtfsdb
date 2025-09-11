@@ -171,7 +171,7 @@ do $$
       update map.edges set indivmultiplier = 0.0000000000001 from geoms where st_dwithin(
         coalesce(geoms.g, 'point empty'::geometry(point, 4326)),
         map.edges.geom,
-        bdist*0.5
+        bdist*0.75
       );
       -- #endregion
 
@@ -186,9 +186,9 @@ do $$
         map.edges
       set
         (multiplier, type) = (
-          (map.edges.multiplier * 100) + (
+          (map.edges.multiplier * 10) + (
             map.edges.multiplier *
-            10000 *
+            1000 *
             abs(sin(st_angle(
               map.edges.geom,
               map.results.geom
@@ -394,7 +394,7 @@ do $$
         select *
         into strict shortest
         from pgr_bdDijkstracost(
-          'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier) as reverse_cost, capacity, reverse_capacity FROM map.edges',
+          'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 5) as reverse_cost, capacity, reverse_capacity FROM map.edges',
           svids,
           evids
         )
@@ -448,7 +448,7 @@ do $$
           stp1.route_id,
           map.edges.length
         from pgr_bdDijkstra(
-          'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier) as reverse_cost, capacity, reverse_capacity FROM map.edges',
+          'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 5) as reverse_cost, capacity, reverse_capacity FROM map.edges',
           (select shortest.start_vid), -- 出発点の頂点ID
           (select shortest.end_vid) -- 到着点の頂点ID
         ) as res
