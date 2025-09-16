@@ -86,7 +86,7 @@ do $$
     stp2 record;
     bdist float := 0.0005; -- バッファ距離
 
-    lengthMultiplier float := 100000; ｰｰ st_lengthで出た値に必ずかけること。
+    lengthMultiplier float := 100000; -- st_lengthで出た値に必ずかけること。
 
     svids integer[];
     evids integer[];
@@ -99,7 +99,7 @@ do $$
   begin
 
   select 0.0005 into bdist;
-  select 100000 into lengthMultiplier;
+  select 10000000 into lengthMultiplier;
 
     /*
       パターンごとに繰り返し
@@ -166,12 +166,12 @@ do $$
 
       -- #region 同じ系統のバス路線は同じ場所を走らせる
       -- with reses as (select edge as id from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id)
-      -- update map.edges set indivmultiplier = 0.0000000000001 where id in (select id from reses);
+      -- update map.edges set indivmultiplier = 0.0000001 where id in (select id from reses);
       with geoms as (select st_collect(geom) as g from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id)
-      update map.edges set indivmultiplier = 0.0000000000001 from geoms where st_dwithin(
+      update map.edges set indivmultiplier = 0.00001 from geoms where st_dwithin(
         coalesce(geoms.g, 'point empty'::geometry(point, 4326)),
         map.edges.geom,
-        bdist*0.75
+        bdist*0.05
       );
       -- #endregion
 
@@ -284,10 +284,12 @@ do $$
       )
       UPDATE map.edges as e SET (
         length,
-        multiplier
+        multiplier,
+        indivmultiplier
       ) = (
         c.length,
-        c.multiplier
+        c.multiplier,
+        c.indivmultiplier
       )
       FROM costs AS c WHERE e.id = c.id;
       -- #endregion
@@ -393,7 +395,7 @@ do $$
         -- #region 各バス停間ごとに最短経路を求める
         select *
         into strict shortest
-        from pgr_bdDijkstracost(
+        from pgr_Dijkstracost(
           'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 5) as reverse_cost, capacity, reverse_capacity FROM map.edges',
           svids,
           evids
@@ -447,7 +449,7 @@ do $$
           stp1.feed_id,
           stp1.route_id,
           map.edges.length
-        from pgr_bdDijkstra(
+        from pgr_Dijkstra(
           'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 5) as reverse_cost, capacity, reverse_capacity FROM map.edges',
           (select shortest.start_vid), -- 出発点の頂点ID
           (select shortest.end_vid) -- 到着点の頂点ID
