@@ -34,7 +34,8 @@ CREATE TABLE
     pattern_id integer,
     feed_id integer,
     route_id varchar(256),
-    deg float
+    deg float,
+    apprmul float
   );
 
 create table
@@ -181,7 +182,7 @@ do $$
       update
         map.edges
       set
-        (multiplier, type) = (map.edges.multiplier * 10000, 'aaa')
+        (apprmul, type) = (100, 'aaa')
       from map.results
       where
         (map.results.pattern_id = pptn) and
