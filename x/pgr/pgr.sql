@@ -87,7 +87,7 @@ do $$
     stp2 record;
     bdist float := 0.0005; -- バッファ距離
 
-    lengthMultiplier float := 100000; ｰｰ st_lengthで出た値に必ずかけること。
+    lengthMultiplier float := 100000; -- st_lengthで出た値に必ずかけること。
 
     svids integer[];
     evids integer[];
@@ -100,7 +100,7 @@ do $$
   begin
 
   select 0.0005 into bdist;
-  select 100000 into lengthMultiplier;
+  select 10000000 into lengthMultiplier;
 
     /*
       パターンごとに繰り返し
@@ -115,6 +115,11 @@ do $$
       where feed_id = 1 and pattern_id in (410, 411)
     ) loop
       raise notice 'pattern_id: %', ptn1.pattern_id;
+
+      /*
+        エッジをテーブルに挿入しコストをいじる
+      */
+      -- #region
 
       -- #region 元の路線を辺リストに挿入
       insert into map.edges (
@@ -162,12 +167,12 @@ do $$
 
       -- #region 同じ系統のバス路線は同じ場所を走らせる
       -- with reses as (select edge as id from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id)
-      -- update map.edges set indivmultiplier = 0.0000000000001 where id in (select id from reses);
+      -- update map.edges set indivmultiplier = 0.0000001 where id in (select id from reses);
       with geoms as (select st_collect(geom) as g from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id)
-      update map.edges set indivmultiplier = 0.0000000000001 from geoms where st_dwithin(
+      update map.edges set indivmultiplier = 0.00001 from geoms where st_dwithin(
         coalesce(geoms.g, 'point empty'::geometry(point, 4326)),
         map.edges.geom,
-        bdist*0.5
+        bdist*0.05
       );
       -- #endregion
 
@@ -177,12 +182,24 @@ do $$
       -- raise notice '%', (select array_to_string(array_agg(id::text), '-', '*') from map.edges where not indivmultiplier = 1);
       -- raise notice '%', (select array_to_string(array_agg(id::text), '-', '*') from (select edge as id from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id));
 
-
       -- #region 決定した路線の周辺のエッジを通さないようにする
       update
         map.edges
       set
+<<<<<<< HEAD
         (apprmul, type) = (100, 'aaa')
+=======
+        (multiplier, type) = (
+          (map.edges.multiplier * 10) + (
+            map.edges.multiplier *
+            1000 *
+            abs(sin(st_angle(
+              map.edges.geom,
+              map.results.geom
+          )))),
+          'aaa'
+        )
+>>>>>>> c81310264f2d3428aadceb0a0c88098578d4b216
       from map.results
       where
         (map.results.pattern_id = pptn) and
@@ -195,7 +212,7 @@ do $$
         );
       -- #endregion
 
-      
+      -- #endregion
       
 
       
@@ -203,6 +220,7 @@ do $$
       /*
         ダイクストラにかけるエッジの前処理
       */
+      -- #region
 
       -- #region 重複エッジ分割
       insert into map.edges (
@@ -271,10 +289,12 @@ do $$
       )
       UPDATE map.edges as e SET (
         length,
-        multiplier
+        multiplier,
+        indivmultiplier
       ) = (
         c.length,
-        c.multiplier
+        c.multiplier,
+        c.indivmultiplier
       )
       FROM costs AS c WHERE e.id = c.id;
       -- #endregion
@@ -314,6 +334,7 @@ do $$
       -- 前処理済みエッジの判別に使うold_idを削除
       update map.edges set old_id = null where old_id is not null;
 
+      -- #endregion
 
 
       /*
@@ -322,6 +343,8 @@ do $$
 
       for stp1 in (select * from stop_patterns where pattern_id = ptn1.pattern_id) loop
         raise notice '  stop_sequence: %', stp1.stop_sequence;
+
+        -- #region 起点側バス停を取得
         if (stp1.stop_sequence = 1) then 
           -- 最初のバス停は処理せず次から
           continue;
@@ -348,9 +371,10 @@ do $$
             bdist * 0.5
           );
         end if;
+        -- #endregion
 
 
-
+        -- #region 終点側バス停を取得
         with ending as (
           select st_point(stop_lon, stop_lat, 4326) as point
           from stops
@@ -370,18 +394,21 @@ do $$
           map.vertices.geom,
           bdist * 0.5
         );
+        -- #endregion
 
 
-        
+        -- #region 各バス停間ごとに最短経路を求める
         select *
         into strict shortest
-        from pgr_bdDijkstracost(
-          'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier) as reverse_cost, capacity, reverse_capacity FROM map.edges',
+        from pgr_Dijkstracost(
+          'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 5) as reverse_cost, capacity, reverse_capacity FROM map.edges',
           svids,
           evids
         )
         order by agg_cost asc
         limit 1;
+        --#endregion
+
         -- raise notice '--%', shortest.agg_cost;
         raise notice '--%', (select indivmultiplier from map.edges order by indivmultiplier asc limit 1);
 
@@ -427,8 +454,8 @@ do $$
           stp1.feed_id,
           stp1.route_id,
           map.edges.length
-        from pgr_bdDijkstra(
-          'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier) as reverse_cost, capacity, reverse_capacity FROM map.edges',
+        from pgr_Dijkstra(
+          'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 5) as reverse_cost, capacity, reverse_capacity FROM map.edges',
           (select shortest.start_vid), -- 出発点の頂点ID
           (select shortest.end_vid) -- 到着点の頂点ID
         ) as res
@@ -542,9 +569,9 @@ do $$
           ptn1.pattern_id as pattern_id,
           0.75 as multiplier,
           ((st_dumpsegments(
-            st_buffer(
+            st_forcepolygoncw(st_buffer(
               st_linemerge(st_collect(geom))
-            , bdist, 'quad_segs=1 join=mitre mitre_limit=5.0')
+            , bdist, 'quad_segs=1 join=mitre mitre_limit=5.0'))
           )).geom) as geom
         from map.results
         where map.results.pattern_id = ptn1.pattern_id
@@ -555,7 +582,7 @@ do $$
           ptn1.pattern_id as pattern_id,
           0.75 as multiplier,
           ((st_dumpsegments(
-            st_buffer(geom, bdist, 'quad_segs=1 join=mitre mitre_limit=5.0 endcap=flat')
+            st_forcepolygoncw(st_buffer(geom, bdist, 'quad_segs=1 join=mitre mitre_limit=5.0 endcap=flat'))
           )).geom) as geom
         from map.results
         where map.results.pattern_id = ptn1.pattern_id
