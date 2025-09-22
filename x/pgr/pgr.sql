@@ -186,9 +186,9 @@ do $$
       update
         map.edges
       set
-<<<<<<< HEAD
-        (apprmul, type) = (100, 'aaa')
-=======
+
+        -- (apprmul, type) = (100, 'aaa')
+
         (multiplier, type) = (
           (map.edges.multiplier * 10) + (
             map.edges.multiplier *
@@ -199,7 +199,7 @@ do $$
           )))),
           'aaa'
         )
->>>>>>> c81310264f2d3428aadceb0a0c88098578d4b216
+
       from map.results
       where
         (map.results.pattern_id = pptn) and
