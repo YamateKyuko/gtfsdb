@@ -46,6 +46,11 @@ create table map.pattern_map (
   name text
 );
 
+drop table if exists map.mvts;
+create table map.mvts (
+  file bytea
+);
+
 
 
   with extent as (
@@ -83,19 +88,23 @@ create table map.pattern_map (
     from tileedge, extent, baseedge),
   tiles as (
     select x, y, st_tileenvelope(14, x, y) as tile from xseri cross join yseri
-  )
-  select st_asmvt(
-    t,
-    'map', -- name (layer)
-    4096, -- extent
-    'mvtg', -- geom_name
-    'pattern_id'
-  ) from (
+  ),
+  mvtgeoms as (
     select
+      x, y,
       st_asmvtgeom(st_transform(geom, 3857), tile, 4096, 256) as mvtg,
       pattern_id
     from tiles, map.results
     where tile && st_transform(geom, 3857)
-  ) as t;
+  )
 
-  
+  insert into map.mvts(file)
+  select st_asmvt(
+    mvtgeoms,
+    'map', -- name (layer)
+    4096, -- extent
+    'mvtg', -- geom_name
+    'pattern_id'
+  ) from mvtgeoms
+  group by x, y;
+
