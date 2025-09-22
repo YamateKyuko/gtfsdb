@@ -1,5 +1,7 @@
 #!/bin/sh
 
+source ./env.txt
+
 FEID=$1
 
 DRCT=$(cd $(dirname $0); pwd)
@@ -33,7 +35,7 @@ ARRY=(
 
 echo "--> 仮テーブル設定"
 psql gtfsdb \
-  -U akaki \
+  -U $pguser \
   -p 5432 \
   -f ./sql/raw_tables.sql
 
@@ -44,7 +46,7 @@ do
     echo "--> ${ARRY[$IDX]}.txtの処理"
     CLMN=`head -n 1 ${DRCT}/unzipped/${ARRY[$IDX]}.txt`
     psql gtfsdb \
-      -U akaki \
+      -U $pguser \
       -p 5432 \
       -c "copy r.${ARRY[$IDX]}(${CLMN}) from '${DRCT}/unzipped/${ARRY[$IDX]}.txt' with (format csv, delimiter ',', header match);"
   else
@@ -54,6 +56,6 @@ done
 
 echo "--> feed_idの付加"
 psql gtfsdb \
-  -U akaki \
+  -U $pguser \
   -p 5432 \
   -c "select r.feed_ider($FEID);"

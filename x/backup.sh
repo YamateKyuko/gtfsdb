@@ -1,11 +1,13 @@
 #!/bin/sh
 # source ./backup.sh で実行
 
+source ./env.txt
+
 npx wrangler d1 execute gtfsdb --remote --yes --file="sql/d1_delete.sql"
 
 # バックアップファイルを作成
 pg_dump \
-  -U akaki \
+  -U $pguser \
   -d gtfsdb \
   -Fp \
   --verbose \
