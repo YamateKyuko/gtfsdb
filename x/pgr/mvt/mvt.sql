@@ -24,7 +24,7 @@ with extent as (
     ) as e
   from map.results),
 level as (
-  select l from (values(14), values(12)) as t(l)
+  select l from (values(14), (12)) as t(l)
 ),
 basetile as (
   select
@@ -60,12 +60,11 @@ tiles as (
   select
     x,
     y,
-    x1.l as z,
-    st_tileenvelope(l, x, y) as tile
+    xseri.l as z,
+    st_tileenvelope(xseri.l, x, y) as tile
     from xseri
     cross join yseri
-    where x1.l = x2.l
-),
+    where xseri.l = yseri.l),
 mvtgeoms as (
   select
     x, y, z,
@@ -74,7 +73,7 @@ mvtgeoms as (
   from tiles, map.results
   where tile && st_transform(geom, 3857)
 )
-insert into map.mvts(data,x,y)
+insert into map.mvts(data, x, y, z)
 select
   st_asmvt(
     mvtgeoms,
@@ -87,5 +86,5 @@ select
   y,
   z
 from mvtgeoms
-group by x, y;
+group by x, y, z;
 
