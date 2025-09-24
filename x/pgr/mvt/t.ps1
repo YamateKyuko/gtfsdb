@@ -1,6 +1,6 @@
 
 
-psql gtfsdb -c "select encode(data, 'hex'), x, y, z from map.mvts;" --csv -U akaki -p 5432 -q -o './mvts.csv'
+psql gtfsdb -c "select z, x, y, encode(data, 'hex') from map.mvts;" --csv -U akaki -p 5432 -q -o './mvts.csv'
 
 
 
