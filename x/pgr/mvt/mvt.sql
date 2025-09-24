@@ -8,7 +8,10 @@ create table map.pattern_map (
 
 drop table if exists map.mvts;
 create table map.mvts (
-  data bytea
+  data bytea,
+  x integer,
+  y integer,
+  z integer
 );
 
 
@@ -20,6 +23,9 @@ with extent as (
       st_transform(geom, 3857)
     ) as e
   from map.results),
+level as (
+  select l from (values(14), values(12)) as t(l)
+),
 basetile as (
   select
     st_transform(st_tileenvelope(0,0,0), 3857) as b),
@@ -30,41 +36,56 @@ baseedge as (
   from basetile),
 tileedge as (
   select
-    (xh / (2 ^ 14)) as xth,
-    (yh / (2 ^ 14)) as yth
-  from baseedge),
+    (xh / (2 ^ l)) as xth,
+    (yh / (2 ^ l)) as yth,
+    l
+  from baseedge, level),
 xseri as (
   select
     generate_series(
       (floor((st_xmin(e) + (xh / 2)) / xth))::integer,
       (floor((st_xmax(e) + (xh / 2)) / xth))::integer
-    ) as x
+    ) as x,
+    l
   from tileedge, extent, baseedge),
 yseri as (
   select
     generate_series(
       (floor((-st_ymax(e) + (yh / 2)) / yth))::integer,
       (floor((-st_ymin(e) + (yh / 2)) / yth))::integer
-    ) as y
+    ) as y,
+    l
   from tileedge, extent, baseedge),
 tiles as (
-  select x, y, st_tileenvelope(14, x, y) as tile from xseri cross join yseri
+  select
+    x,
+    y,
+    x1.l as z,
+    st_tileenvelope(l, x, y) as tile
+    from xseri
+    cross join yseri
+    where x1.l = x2.l
 ),
 mvtgeoms as (
   select
-    x, y,
+    x, y, z,
     st_asmvtgeom(st_transform(geom, 3857), tile, 4096, 256) as mvtg,
     pattern_id
   from tiles, map.results
   where tile && st_transform(geom, 3857)
 )
-insert into map.mvts(data)
-select st_asmvt(
-  mvtgeoms,
-  'map', -- name (layer)
-  4096, -- extent
-  'mvtg', -- geom_name
-  'pattern_id'
-) from mvtgeoms
+insert into map.mvts(data,x,y)
+select
+  st_asmvt(
+    mvtgeoms,
+    'map', -- name (layer)
+    4096, -- extent
+    'mvtg', -- geom_name
+    'pattern_id'
+  ),
+  x,
+  y,
+  z
+from mvtgeoms
 group by x, y;
 
