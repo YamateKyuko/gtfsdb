@@ -1,12 +1,6 @@
+# npx wrangler kv bulk put "$PSScriptRoot/data.json" --binding=mvts --remote
 
 
-psql gtfsdb -c "select z, x, y, encode(data, 'hex') from map.mvts;" --csv -U akaki -p 5432 -q -o './mvts.csv'
+Invoke-Expression (Get-Content "$PSScriptRoot/env.ps1" -Raw)
 
-
-
-# certutil -decodehex './mvts.csv' './mvts_decodedcsv'
-
-
-  # for /f %%d in ('./mvts.csv') do (
-  #   echo %%d
-  # )
+Write-Host $global:pguser

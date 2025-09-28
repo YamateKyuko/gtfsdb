@@ -56,6 +56,14 @@
     }
   ],
 
+  "kv_namespaces": [
+    {
+      "binding": "mvts",
+      
+      "id": "5601e518aabe46658f76025d1523852c"
+    }
+  ],
+
 
 	"compatibility_flags": ["nodejs_compat"]
 }
