@@ -85,6 +85,9 @@ export class mvtsAPI<T extends reqType> {
       const z = Number(paths[4]);
       const x = Number(paths[5]);
       const y = Number(paths[6]);
+      const filename = paths[7] || null;
+
+      if (filename != 'mvt.pbf') return Response.json({ error: 'wrong file name' }, { status: 400 });
 
       if (!x || !y || !z) return Response.json({ error: 'wrong tile number' }, { status: 400 });
 

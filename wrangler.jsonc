@@ -58,7 +58,8 @@
   ],
   "kv_namespaces": [
     {
-      "binding": "MVTS",
+      "binding": "mvts",
+  
       "id": "6d57f1cee3f04affb14057932512ce7c",
       "remote": true
     }

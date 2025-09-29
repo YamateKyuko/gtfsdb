@@ -1,5 +1,7 @@
 import { mvtsAPI } from "../mvtsAPI";
 
+import { Buffer } from 'buffer';
+
 const api = new mvtsAPI<{
   // z: number;
   // x: number;
@@ -17,31 +19,33 @@ const api = new mvtsAPI<{
       tileNumber
     } = reqObj;
 
-    const value = await kv.get(tileNumber) || '';
+    const value = await kv.get(tileNumber) || null;
 
-    const file = await base64DecodeAsBlob(value);
+    if (!value) return Response.json({ error: 'tile not found' }, { status: 404 });
 
-    console.log(file);
+    // const file = await base64DecodeAsBlob(value);
+
+    const str = Buffer.from(value, 'hex').toString();
+    console.log(str);
 
     
-    // if (!value) return 
 
     const head = new Headers();
     head.set("Content-Type", "application/vnd.mapbox-vector-tile");
 
-    const res = new Response(value, {headers: head});
+    const res = new Response(str, {headers: head});
     // .headers("Content-Type", "application/vnd.mapbox-vector-tile");
 
     // if (!value)
     
-    // if (!results) return Response.json([]);
+    // return Response.json([]);
     
-    return Response.json({})
+    return res;
   },
 });
 
-async function base64DecodeAsBlob(text: string, type = "text/plain;charset=UTF-8") {
-  return fetch(`data:${type};base64,` + text).then(response => response.blob());
-} 
+// async function base64DecodeAsBlob(text: string, type = "text/plain;charset=UTF-8") {
+//   return fetch(`data:${type};base64,` + text).then(response => response.blob());
+// }
 
 export default api;
