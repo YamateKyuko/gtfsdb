@@ -38,44 +38,63 @@ export class mvtsAPI<T extends reqType> {
 
   get(
     request: Request,
-    kv: KVNamespace,
-    apiKey: string
+    kv: KVNamespace
+    // apiKey: string
   ) {
     return this.auth(
       request,
       this.getProcessor,
-      kv,
-      apiKey
+      kv
+      // apiKey
     );
   };
 
   auth(
     req: Request,
     func: typeof this.getProcessor,
-    kv: KVNamespace,
-    apiKey: string
+    kv: KVNamespace
+    // apiKey: string
   ) {
-    if (!apiKey) return Response.json({ error: 'api key is not avilable' }, { status: 401 });
+    // if (!apiKey) return Response.json({ error: 'api key is not avilable' }, { status: 401 });
 
-    // ヘッダ確認
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) return Response.json({ error: 'without authorization header' }, { status: 401 });
+  //   // ヘッダ確認
+  //   const authHeader = req.headers.get('Authorization');
+  //   if (!authHeader) return Response.json({ error: 'without authorization header' }, { status: 401 });
   
-    // JWT存在確認
-    const token = authHeader.split(' ')[1];
-    if (!token) return Response.json({ error: 'without token' }, { status: 401 });
+  //   // JWT存在確認
+  //   const token = authHeader.split(' ')[1];
+  //   if (!token) return Response.json({ error: 'without token' }, { status: 401 });
 
     try {
       // JWTボディ部検証
-      const payload = jwt.verify(token, apiKey);
-      if (!isObject(payload)) return Response.json({ error: 'wrong token format' }, { status: 401 });
-      if (payload.endpoint != this.endpoint) return Response.json({ error: `wrong endpoint name ${this.endpoint} ${payload.endpoint}` }, { status: 401 });
+      // const payload = jwt.verify(token, apiKey);
+      // if (!isObject(payload)) return Response.json({ error: 'wrong token format' }, { status: 401 });
+      // if (payload.endpoint != this.endpoint) return Response.json({ error: `wrong endpoint name ${this.endpoint} ${payload.endpoint}` }, { status: 401 });
       // リクエストパラメータ検証
-      const requestObj = payload.requestObj;
-      if (!isObject(requestObj)) return Response.json({ error: 'wrong request parameter format' }, { status: 401 });
+      // const requestObj = payload.requestObj;
+      // if (!isObject(requestObj)) return Response.json({ error: 'wrong request parameter format' }, { status: 401 });
+
+      // return func(
+      //   payload.requestObj as T,
+      //   kv
+      // ); // 型注意
+
+      const { pathname } = new URL(req.url);
+      const paths = pathname.split('/');
+      
+      const z = Number(paths[4]);
+      const x = Number(paths[5]);
+      const y = Number(paths[6]);
+
+      if (!x || !y || !z) return Response.json({ error: 'wrong tile number' }, { status: 400 });
+
+      const obj = {
+        tileNumber: `${z}/${x}/${y}`
+      };
+
 
       return func(
-        payload.requestObj as T,
+        obj as unknown as T,
         kv
       ); // 型注意
     } catch (e) {

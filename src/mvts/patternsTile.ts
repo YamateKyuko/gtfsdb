@@ -4,26 +4,44 @@ const api = new mvtsAPI<{
   // z: number;
   // x: number;
   // y: number;
+
+  tileNumber: string;
 }>({
-  endpoint: 'mvts/patternsTile',
+  endpoint: 'mvts/patterns_tile',
 
   async getProcesor(
     reqObj,
     kv: KVNamespace
   ) {
-    // const {
-    //   feed_id: feedId,
-    //   trip_id: tripId
-    // } = reqObj;
+    const {
+      tileNumber
+    } = reqObj;
 
-    // console.log(reqObj);
+    const value = await kv.get(tileNumber) || '';
 
-    // const value = await kv.get("user_2");
+    const file = await base64DecodeAsBlob(value);
+
+    console.log(file);
+
+    
+    // if (!value) return 
+
+    const head = new Headers();
+    head.set("Content-Type", "application/vnd.mapbox-vector-tile");
+
+    const res = new Response(value, {headers: head});
+    // .headers("Content-Type", "application/vnd.mapbox-vector-tile");
+
+    // if (!value)
     
     // if (!results) return Response.json([]);
     
-    return Response.json({v: "aaa"});
+    return Response.json({})
   },
 });
+
+async function base64DecodeAsBlob(text: string, type = "text/plain;charset=UTF-8") {
+  return fetch(`data:${type};base64,` + text).then(response => response.blob());
+} 
 
 export default api;

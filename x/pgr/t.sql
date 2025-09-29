@@ -37,3 +37,19 @@
 --     14
 -- )
 
+with mvtgeoms as (
+  select
+    st_asmvtgeom(st_transform(geom, 3857), st_tileenvelope(14, 1, 1), 4096, 256) as mvtg,
+    pattern_id
+  from map.results
+  where st_tileenvelope(14, 1, 1) && st_transform(geom, 3857)
+)
+select
+  st_asmvt(
+    mvtgeoms,
+    'map', -- name (layer)
+    4096, -- extent
+    'mvtg', -- geom_name
+    'pattern_id'
+  )
+  from mvtgeoms;

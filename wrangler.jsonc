@@ -50,15 +50,17 @@
 
 	"d1_databases": [
     {
-      "binding": "DB",
+      "binding": "GTFSDB",
       "database_name": "gtfsdb",
-      "database_id": "9877f766-d9ab-42aa-9b2d-68efb91e8971"
+      "database_id": "9877f766-d9ab-42aa-9b2d-68efb91e8971",
+      "remote": true
     }
   ],
   "kv_namespaces": [
     {
-      "binding": "mvts",
-      "id": "6d57f1cee3f04affb14057932512ce7c"
+      "binding": "MVTS",
+      "id": "6d57f1cee3f04affb14057932512ce7c",
+      "remote": true
     }
   ],
 
