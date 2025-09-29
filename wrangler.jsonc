@@ -55,15 +55,12 @@
       "database_id": "9877f766-d9ab-42aa-9b2d-68efb91e8971"
     }
   ],
-
   "kv_namespaces": [
     {
       "binding": "mvts",
-      
-      "id": "5601e518aabe46658f76025d1523852c"
+      "id": "6d57f1cee3f04affb14057932512ce7c"
     }
   ],
-
 
 	"compatibility_flags": ["nodejs_compat"]
 }

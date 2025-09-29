@@ -3,7 +3,9 @@
 declare namespace Cloudflare {
 	interface Env {
 		GTFSDB: D1Database;
+    mvts: KVNamespace;
 	}
+  // interface 
 }
 interface Env extends Cloudflare.Env {}
 

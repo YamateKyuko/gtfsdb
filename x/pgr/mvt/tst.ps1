@@ -49,5 +49,5 @@ for ($i = 0; $i -lt $Datas.Length; $i++) {
   $json += $row
 }
 $str = ConvertTo-Json $json
-Write-Host $str
-$str | Out-File -FilePath "$PSScriptRoot/data.json"
+# Write-Host $str
+$str | Out-File -FilePath "$PSScriptRoot/data.json" -Encoding UTF8
