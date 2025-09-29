@@ -1,4 +1,4 @@
-import { dbAPI } from "../dbAPI";
+import { dbAPI } from "../gtfsdbAPI";
 
 const api = new dbAPI<{
   pattern_id: number;

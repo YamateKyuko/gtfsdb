@@ -1,10 +1,21 @@
+psql gtfsdb `
+-U $pguser `
+-p 5432 `
+-f "$PSScriptRoot/mvt.sql"
+
 # $Datapath = Get-Location
 
 Invoke-Expression (Get-Content "$PSScriptRoot/env.ps1" -Raw)
 
-Write-Host $global:pguser
+# Write-Host $global:pguser
 
-psql gtfsdb -c "select z, x, y, encode(data, 'hex') from map.mvts;" --csv -U $global:pguser -p 5432 -q -o './mvts.csv'
+psql gtfsdb `
+-c "select z, x, y, encode(data, 'hex') from map.mvts;" `
+--csv -q `
+-U $global:pguser `
+-p 5432 `
+-o './mvts.csv'
+
 
 $json = @()
 
@@ -48,6 +59,17 @@ for ($i = 0; $i -lt $Datas.Length; $i++) {
 
   $json += $row
 }
-$str = ConvertTo-Json $json
-# Write-Host $str
-$str | Out-File -FilePath "$PSScriptRoot/data.json" -Encoding UTF8
+
+ConvertTo-Json $json | Out-File -FilePath "$PSScriptRoot/data.json" -Encoding UTF8
+
+npx wrangler kv key list --binding="mvts" --remote |Out-File "$PSScriptRoot/keys.json" -Encoding UTF8
+
+Write-Host | npx wrangler kv bulk delete "$PSScriptRoot/keys.json" --binding="mvts" --remote 
+
+npx wrangler kv bulk put "$PSScriptRoot/data.json" --binding="mvts" --remote
+
+Remove-Item -Path "$PSScriptRoot/keys.json" -Force
+Remove-Item -Path "$PSScriptRoot/data.json" -Force
+Remove-Item -Path "$PSScriptRoot/mvts.csv" -Force
+
+Remove-Item -Path $dirc -Force -Recurse -Confirm:$false -ErrorAction SilentlyContinue

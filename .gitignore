@@ -188,6 +188,8 @@ downloaded.zip
 
 env.txt
 
-mvts/
+mvt/mvts/
 
 env.ps1
+
+apiTest.ts
