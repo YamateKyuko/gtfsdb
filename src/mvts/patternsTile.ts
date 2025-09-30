@@ -26,12 +26,13 @@ const api = new mvtsAPI<{
     // const file = await base64DecodeAsBlob(value);
 
     const str = Buffer.from(value, 'hex').toString();
-    console.log(str);
+    // console.log(str);
 
     
 
     const head = new Headers();
     head.set("Content-Type", "application/vnd.mapbox-vector-tile");
+    head.set("access-control-allow-origin", "*");
 
     const res = new Response(str, {headers: head});
     // .headers("Content-Type", "application/vnd.mapbox-vector-tile");

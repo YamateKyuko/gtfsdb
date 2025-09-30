@@ -111,4 +111,4 @@ export class mvtsAPI<T extends reqType> {
 
 type queryParam = {[key: string]: string | undefined | number | object};
 const isObject = (x: unknown): x is queryParam =>
-  x !== null && (typeof x === 'object' || typeof x === 'function')
+  x !== null && (typeof x === 'object' || typeof x === 'function');
