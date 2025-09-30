@@ -193,3 +193,5 @@ mvt/mvts/
 env.ps1
 
 apiTest.ts
+
+.Ds_Store
