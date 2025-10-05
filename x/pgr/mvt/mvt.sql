@@ -76,11 +76,11 @@ mvtgeoms as (
 insert into map.mvts(data, x, y, z)
 select
   st_asmvt(
-    mvtgeoms,
-    'map', -- name (layer)
-    4096, -- extent
-    'mvtg', -- geom_name
-    'pattern_id'
+    mvtgeoms, -- row
+    'map' -- name (layer)
+    -- 4096, -- extent
+    -- 'mvtg', -- geom_name
+    -- 'pattern_id'
   ),
   x,
   y,

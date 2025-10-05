@@ -55,6 +55,8 @@ export class mvtsAPI<T extends reqType> {
     kv: KVNamespace
     // apiKey: string
   ) {
+
+    
     // if (!apiKey) return Response.json({ error: 'api key is not avilable' }, { status: 401 });
 
   //   // ヘッダ確認
@@ -94,6 +96,8 @@ export class mvtsAPI<T extends reqType> {
       const obj = {
         tileNumber: `${z}/${x}/${y}`
       };
+
+      console.log(req);
 
 
       return func(
