@@ -21,6 +21,7 @@
 		"@types/jsonwebtoken": "^9.0.9",
 		"buffer": "^6.0.3",
 		"google-protobuf": "^4.0.0",
-		"protobufjs": "^7.5.4"
+		"protobufjs": "^7.5.4",
+		"protobufjs-cli": "^1.1.3"
 	}
 }
