@@ -21,6 +21,7 @@
 		"@mapbox/vector-tile": "^2.0.4",
 		"@types/jsonwebtoken": "^9.0.9",
 		"buffer": "^6.0.3",
+		"dotenv": "^17.2.3",
 		"google-protobuf": "^4.0.0",
 		"pbf": "^4.0.1",
 		"pg": "^8.16.3",
