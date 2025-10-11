@@ -3,6 +3,7 @@ const { VectorTile } = require('@mapbox/vector-tile');
 const {default: Pbf} = require('pbf'); // ← ここを修正
 
 async function main() {
+  console.log(process.env.UN)
   const scriptroot = process.mainModule.path;
   let text = await fs.readFileSync(`${scriptroot}/hexmvt.txt`);
 
