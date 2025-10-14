@@ -4,10 +4,13 @@
     "geometry": {
       "type": "Point",
       "coordinates": [
-        -180,
-        -85.05112877980659
+        90,
+        -71.88357830131247
       ]
     },
-    "properties": {}
+    "properties": {
+      "name": "nishiwaki",
+      "srid": 4326
+    }
   }
 ]
