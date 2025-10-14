@@ -24,7 +24,8 @@ with points as (
     geom,
     name
   from (values
-    (ST_SetSRID(ST_MakePoint(135, 35), 4326),'nishiwaki')
+    (st_geomfromgeojeon('{"type":"Point","coordinates":[135,35]}'), 'nishiwaki')
+    -- (ST_SetSRID(ST_MakePoint(135, 35), 4326),'nishiwaki')
   ) as t(geom,name)
 ),
 mvts as (
