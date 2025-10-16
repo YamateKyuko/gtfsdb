@@ -37,11 +37,12 @@
         },
         plateau: {
             type: 'vector',
-            tiles: ['http://localhost:8787/api/mvts/patterns_tile/{z}/{x}/{y}/mvt.pbf'],
+            tiles: ['http://localhost:5500/gtfsdb/src/pbf/mvt.txt'],
+            // tiles: ['http://localhost:8787/api/mvts/patterns_tile/{z}/{x}/{y}/mvt.pbf'],
             // tiles: ['https://gtfsdb.yamakyu.workers.dev/api/mvts/14/14539/6451/mvt.pbf'],
             
-            minzoom: 14,
-            maxzoom: 14,
+            minzoom: 1,
+            maxzoom: 1,
           
             attribution:
                 "データの出典：<a href='https://github.com/indigo-lab/plateau-tokyo23ku-building-mvt-2020'>plateau-tokyo23ku-building-mvt-2020 by indigo-lab</a> (<a href='https://www.mlit.go.jp/plateau/'>国土交通省 Project PLATEAU</a> のデータを加工して作成)",
@@ -71,14 +72,14 @@
 
         {
             id: 'bldg',
-            type: 'fill-extrusion',
+            type: 'circle',
             source: 'plateau',
-            'source-layer': 'bldg',
-            minzoom: 10,
-            maxzoom: 20,
+            'source-layer': 'poly',
+            minzoom: 1,
+            maxzoom: 1,
             paint: {
-                'fill-extrusion-color': '#797979',
-                'fill-extrusion-height': ['get', 'measuredHeight'],
+                // 'fill-extrusion-color': '#797979',
+                // 'fill-extrusion-height': ['get', 'measuredHeight'],
             },
         },
     ],

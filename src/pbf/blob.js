@@ -23,11 +23,12 @@ async function main() {
 
   const response = await fs.readFileSync("./mvt.txt");
 
-  // console.log(response.arrayBuffer());
+  // console.log(response);
 
   // const arrayBuffer = await response.arrayBuffer();
   const uint8Array = new Uint8Array(response);
   const Tile = vector_tile.vector_tile.Tile.decode(uint8Array);
+  console.log(Tile);
   const str = JSON.stringify(Tile, null, 2);
   fs.writeFileSync("mvt.json", str);
 }

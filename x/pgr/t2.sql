@@ -39,13 +39,25 @@
 -- select btrim(mvt::TEXT, '\x') from mvts
 
 
+-- with points as (
+--   select
+--     st_transform(geom, 3857) as geom,
+--     name
+--   from (values
+--     (st_point(135,35,4326),'nishiwaki')
+--   ) as t(geom,name)
+-- )
+
 with points as (
   select
-    st_transform(geom, 3857) as geom,
+    --     SELECT ST_SetSRID(ST_MakePoint(135, 35), 4326);st_transform(geom, 3857) as 
+    geom,
     name
   from (values
-    (st_point(135,35,4326),'nishiwaki')
+    (st_geomfromgeojson('{"type":"Point","coordinates":[135,35]}'::text), 'nishiwaki')
+    -- (ST_SetSRID(ST_MakePoint(135, 35), 4326),'nishiwaki')
   ) as t(geom,name)
 )
 
-select *, st_x(geom) from points;
+select *, st_astext(geom) from points;
+

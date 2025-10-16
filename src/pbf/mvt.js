@@ -24,7 +24,8 @@ with points as (
     geom,
     name
   from (values
-    (st_geomfromgeojeon('{"type":"Point","coordinates":[135,35]}'), 'nishiwaki')
+    (st_transform(st_geomfromgeojson('{"type":"Point","coordinates":[139.7453357780371,35.65865995892796]}'::text), 4326), 'nishiwaki')
+    -- (st_transform(st_geomfromgeojson('{"type":"Point","coordinates":[135,35]}'::text), 4326), 'nishiwaki')
     -- (ST_SetSRID(ST_MakePoint(135, 35), 4326),'nishiwaki')
   ) as t(geom,name)
 ),
@@ -35,22 +36,25 @@ mvts as (
     'poly',
     4096,
     'geom'
-  ) as mvt
+  ) as mvt,
+	array_agg(st_srid(geom)),
+	array_agg(st_astext(st_transform(geom, 4326)))
   from (
     select
       st_asmvtgeom(
         st_transform(geom, 3857),
-        st_tileenvelope(1,1,0)
+        st_transform(st_tileenvelope(1,1,0), 3857),
+				4096,
+				256
       ) as geom,
       -- 'hoge' as 
       name,
       st_srid(geom) as srid
     from points
-    where geom && st_tileenvelope(1,1,0)
+    where geom && st_transform(st_tileenvelope(1,1,0), 4326)
   ) as t
 )
-
-select btrim(mvt::TEXT, '\\x') as mvt from mvts
+select btrim(mvt::TEXT, '\\x') as mvt from mvts;
   `);
   console.log(res.rows);
 
