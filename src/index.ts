@@ -2,7 +2,7 @@ import stopPatternsAPI from "./gtfsdb/stopPatterns";
 import stopTimesAPI from "./gtfsdb/stopTimes";
 import diaTimesAPI from "./gtfsdb/diaTimes";
 
-import patternsTileAPI from "./mvts/patternsTile";
+// import patternsTileAPI from "./mvts/patternsTile";
 
 // import apiTest from "./apiTest";
 
@@ -37,13 +37,13 @@ export default {
           default:
             return Response.json({gtfsdb: 'Not Found'}, { status: 404 })
         };
-      case 'mvts':
-        switch (paths[3]) {
-          case 'patterns_tile':
-            return await patternsTileAPI.get(req, env.mvts);
-          default:
-            return Response.json({gtfsdb: 'Not Found'}, { status: 404 })
-        };
+      // case 'mvts':
+      //   switch (paths[3]) {
+      //     case 'patterns_tile':
+      //       return await patternsTileAPI.get(req, env.mvts);
+      //     default:
+      //       return Response.json({gtfsdb: 'Not Found'}, { status: 404 })
+      //   };
       // case 'test':
         // return await apiTest(req, testapikey, apiKey);
       default:
