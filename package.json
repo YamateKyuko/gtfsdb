@@ -19,15 +19,6 @@
 	},
 	"dependencies": {
 		"@mapbox/vector-tile": "^2.0.4",
-		"@types/jsonwebtoken": "^9.0.9",
-		"buffer": "^6.0.3",
-		"dotenv": "^17.2.3",
-		"express": "^5.1.0",
-		"google-protobuf": "^4.0.0",
-		"node-pg-format": "^1.3.5",
-		"pbf": "^4.0.1",
-		"pg": "^8.16.3",
-		"protobufjs": "^7.5.4",
-		"protobufjs-cli": "^1.1.3"
+		"@types/jsonwebtoken": "^9.0.9"
 	}
 }
