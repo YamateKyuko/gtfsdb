@@ -2,7 +2,7 @@ create schema if not exists busmap;
 
 drop table if exists busmap.maproutes;
 create table busmap.maproute(
-  maproute_id integer primary key,
+  maproute_id integer generated always as identity,
   maproute_name text,
   geom geometry(multilinestring, 4326)
 );
@@ -21,7 +21,7 @@ create table busmap.mappattern(
 
 drop table if exists busmap.mapstations;
 create table busmap.stations(
-  mapstation_id integer primary key,
+  mapstation_id integer generated always as identity,
   mapstation_name text,
   geom geometry(polygon, 4326)
 );
