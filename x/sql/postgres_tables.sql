@@ -1,45 +1,4 @@
 
--- drop function if exists ud_to_second(varchar(8));
--- create function
--- ud_to_second(
--- varchar(8)
--- ) returns integer as $$
--- SELECT (
--- split_part($1, ':', 1)::smallint * 3600 +
--- split_part($1, ':', 2)::smallint * 60 +
--- split_part($1, ':', 3)::smallint 
--- )::integer
--- $$ language sql;
-
--- drop function if exists ud_to_day(date);
--- create function ud_to_day(date)
--- returns varchar(3) as $$
--- SELECT
--- (array['日','月','火','水','木','金','土'])[EXTRACT(DOW FROM CAST($1 AS DATE)) + 1]
--- $$ language sql;
-
--- drop function if exists ud_is_holiday(date);
--- create function ud_is_holiday(date) returns bool as $$
--- select 
--- holiday_name is not null
--- from holidays
--- where holiday_date = $1
--- limit 1;
--- $$ language sql;
-
--- drop function if exists ud_to_daytype(date);
--- create function ud_to_daytype(date) returns varchar(2) as $$
--- select
--- case ud_is_holiday($1)
--- when true then '祝'
--- else case ud_to_day($1) 
---   when '日' then '日'
---   when '土' then '土'
---   else '平'
--- end
--- end;
--- $$ language sql;
-
 drop table if exists feed cascade;
 create table feed (
   feed_id integer not null,
@@ -291,4 +250,74 @@ create table translations (
   primary key (feed_id, language, translation_type, record_id)
 );
 -- create index if not exists ix_translations_zone_id on translations(feed_id, fare_id, origine_id, destination_id);
+
+
+
+
+
+
+
+
+
+
+
+
+
+drop table if exists holidays;
+create table holidays (
+	holiday_date date,
+	holiday_name varchar(31),
+	holiday_day varchar(3)
+);
+
+drop table if exists daytype_cnt;
+create table daytype_cnt (
+	feed_id integer not null,
+	route_id varchar(255) not null,
+	pattern_id integer not null,
+	daytype varchar(2),
+	cnt integer not null
+);
+
+
+drop function if exists ud_to_second(varchar(8));
+create function
+ud_to_second(
+varchar(8)
+) returns integer as $$
+SELECT (
+split_part($1, ':', 1)::smallint * 3600 +
+split_part($1, ':', 2)::smallint * 60 +
+split_part($1, ':', 3)::smallint 
+)::integer
+$$ language sql;
+
+drop function if exists ud_to_day(date);
+create function ud_to_day(date)
+returns varchar(3) as $$
+SELECT
+(array['日','月','火','水','木','金','土'])[EXTRACT(DOW FROM CAST($1 AS DATE)) + 1]
+$$ language sql;
+
+drop function if exists ud_is_holiday(date);
+create function ud_is_holiday(date) returns bool as $$
+select 
+holiday_name is not null
+from holidays
+where holiday_date = $1
+limit 1;
+$$ language sql;
+
+drop function if exists ud_to_daytype(date);
+create function ud_to_daytype(date) returns varchar(2) as $$
+select
+case ud_is_holiday($1)
+when true then '祝'
+else case ud_to_day($1) 
+  when '日' then '日'
+  when '土' then '土'
+  else '平'
+end
+end;
+$$ language sql;
 

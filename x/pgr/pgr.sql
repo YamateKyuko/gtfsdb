@@ -63,16 +63,18 @@ create table
     pattern_id integer,
     feed_id integer,
     route_id varchar(256),
-    length float
+    length float,
+    segm_id integer
   );
 
 drop table if exists map.pts;
 
-create table
+create table -- つかってるヨ!!!
   map.pts (
     geom geometry (Point, 4326),
     type varchar(63),
-    pattern_id integer
+    pattern_id integer,
+    stop_sequence integer
   );
 
 -- #endregion 
@@ -85,7 +87,7 @@ do $$
 
     stp1 record;  
     stp2 record;
-    bdist float := 0.0005; -- バッファ距離
+    bdist float := 0.00025; -- バッファ距離
 
     lengthMultiplier float := 100000; -- st_lengthで出た値に必ずかけること。
 
@@ -99,7 +101,7 @@ do $$
     bool boolean;
   begin
 
-  select 0.0005 into bdist;
+  select 0.00025 into bdist;
   select 10000000 into lengthMultiplier;
 
     /*
@@ -112,7 +114,7 @@ do $$
       --   -- '府７５'
       --   '武７１'
       -- )
-      where feed_id = 1 and pattern_id in (410, 411)
+      where feed_id = 1 and pattern_id in (410, 411, 412, 413)
     ) loop
       raise notice 'pattern_id: %', ptn1.pattern_id;
 
@@ -168,12 +170,12 @@ do $$
       -- #region 同じ系統のバス路線は同じ場所を走らせる
       -- with reses as (select edge as id from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id)
       -- update map.edges set indivmultiplier = 0.0000001 where id in (select id from reses);
-      with geoms as (select st_collect(geom) as g from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id)
-      update map.edges set indivmultiplier = 0.00001 from geoms where st_dwithin(
-        coalesce(geoms.g, 'point empty'::geometry(point, 4326)),
-        map.edges.geom,
-        bdist*0.05
-      );
+      -- with geoms as (select st_collect(geom) as g from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id)
+      -- update map.edges set indivmultiplier = 0.00001 from geoms where st_dwithin(
+      --   coalesce(geoms.g, 'point empty'::geometry(point, 4326)),
+      --   map.edges.geom,
+      --   bdist*0.05
+      -- );
       -- #endregion
 
 
@@ -419,7 +421,18 @@ do $$
 
         -- raise notice '%', shortest;
         select array[shortest.end_vid] into svids;
-        insert into map.pts (geom, pattern_id) select geom, ptn1.pattern_id from map.vertices where id = shortest.end_vid;
+        insert
+        into map.pts (
+          geom,
+          pattern_id,
+          stop_sequence
+        )
+        select
+          geom,
+          ptn1.pattern_id,
+          stp1.stop_sequence
+        from map.vertices
+        where id = shortest.end_vid;
 
         -- svid_set as (select [costlist.end_vid]::integer[] into svids from costlist)
 
