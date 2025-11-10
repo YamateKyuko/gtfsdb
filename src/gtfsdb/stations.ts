@@ -37,7 +37,7 @@ select
 from stop_patterns as ptn
 inner join stops using (feed_id, stop_id)
 WHERE 
-  station_id = 1
+  station_id = $1
 group by station_id;`,
     )
       .bind(...[stationId])
