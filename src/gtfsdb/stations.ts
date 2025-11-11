@@ -33,19 +33,20 @@ select
         'route_name', route_name
       )
     )
-  ) as sta
+  ) as obj
 from stop_patterns as ptn
 inner join stops using (feed_id, stop_id)
 WHERE 
   station_id = $1
-group by station_id;`,
+group by station_id
+limit 1;`,
     )
       .bind(...[stationId])
       .all();
     
     if (!results) return Response.json([]);
     
-    return Response.json(results);
+    return Response.json(JSON.parse(results[0].obj as string));
   },
 });
 
