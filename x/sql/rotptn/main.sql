@@ -15,7 +15,8 @@ create table rots.results (
   feed_id integer,
   route_id text,
   station_id integer,
-  next_stations integer[]
+  next_stations integer[],
+  id integer generated always as identity
   -- after_id integer
   -- station_id integer,
   -- next_station_id integer,
@@ -26,12 +27,13 @@ drop table if exists rots.indeg;
 create table rots.indeg (station_id integer, deg integer);
 
 drop table if exists rots.rs;
-create table if exists rots.rs(
+create table if not exists rots.rs(
   -- feed_id integer,
   -- route_id text,
   station_id integer,
   -- next_stations integer[],
-  after_id integer
+  after_id integer,
+  station integer
 );
 
 do $$
@@ -66,18 +68,25 @@ begin
 
     -- insert into rots.results (station_id) select station_id from rots.edges group by station_id; 
     with a as (select station_id, next_station_id from rots.edges group by station_id, next_station_id)
-    insert into rots.results (station_id, next_stations) select station_id, array_agg(next_station_id) from a group by station_id;
+    insert into rots.results (station_id, next_stations, id) select station_id, array_agg(next_station_id) from a group by station_id;
 
     
       -- cnt := cnt + 1;
     -- drop function if exists ntf(); 
     -- create function 
-    
-    for edg in (select * from rots.results) loop
 
-      if (select count(*), unnest(edg.next_stations) = 1) then
-        insert into rs select edg.station_id, edg.next_stations[0];
-      end if;
+    loop
+      select * into edg from rots.results limit 1;
+      delete from rots.results where results.id = edg.id;
+    -- for edg in () loop
+
+      for e in (select edg.id, unnest(edg.next_stations)) loop
+        if () then
+          insert into rots.rs select edg.station_id, edg.next_stations[0];
+        end if;
+      end loop;
+
+      
       
     end loop;
     
@@ -137,4 +146,4 @@ $$ language plpgsql;
 -- select results.*, station_name from rots.results inner join parent_stations using (station_id);
 
 select * from rots.results;
-drop schema if exists rots cascade;
+drop schema rots cascade;

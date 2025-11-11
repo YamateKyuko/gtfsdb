@@ -12,6 +12,7 @@ BEGIN
   insert into tst.tns values ('a', 2), ('b', 2), ('f', 2), ('e', 2);
   insert into tst.tns values ('b', 3), ('f', 3), ('e', 3);
   insert into tst.tns values ('b', 4), ('f', 4), ('g', 4);
+  insert into tst.tns values ('b', 7), ('f', 7), ('h', 7), ('g', 7), ('b', 7);
   -- insert into tst.tns values ('b', 3), ('f', 3), ('e', 3);
   with a as (select row_number() over(partition by i), v, i from tst.tns)
   update tst.tns set n = row_number from a where tns.v = a.v and tns.i = a.i;
@@ -44,6 +45,8 @@ BEGIN
     WHERE deg = 0
     ORDER BY node
     LIMIT 1;
+
+    raise notice '%', cur_node;
 
     EXIT WHEN NOT FOUND;
 
