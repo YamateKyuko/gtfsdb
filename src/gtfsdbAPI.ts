@@ -59,6 +59,13 @@ export class dbAPI<T extends reqType> {
 
     // ヘッダ確認
     const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      const url = new URL(req.url);
+      const params = new URLSearchParams(url.search);
+      const token = params.get('token');
+      if (!token) return Response.json({ error: 'without authorization header' }, { status: 401 });
+      token
+    };
     if (!authHeader) return Response.json({ error: 'without authorization header' }, { status: 401 });
   
     // JWT存在確認
