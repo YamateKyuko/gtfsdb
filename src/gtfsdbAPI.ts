@@ -11,27 +11,54 @@ export interface ResponsePayload<T extends object> {
   result: T;
 };
 
-type reqType = Record<string, unknown>;
+// reqType: tsの型
+
+// enty: 実体の型
+// type reqType = Record<string, reqTypeVs>;
+// type reqTypeVs = string | number | boolean;
+// type reqTypeVToEntyV<T extends reqTypeVs> =
+//   T extends string ? 'string':
+//   T extends number ? 'number':
+//   T extends boolean ? 'boolean':
+//   never;
+// type reqTypeToEnty<T extends reqType> = Readonly<{[newK in keyof T]: reqTypeVToEntyV<T[newK]>}>;
+// type Enty<T extends reqType> = reqTypeToEnty<T>;
+
+type Enty = Readonly<Record<string, EntyVs>>;
+type EntyVs = 'string' | 'number' | 'boolean' | 'string[]' | 'number[]' | 'boolean[]';
+type EntyVToReqTypeV<T extends EntyVs> = 
+  T extends 'string' ? string :
+  T extends 'number' ? number :
+  T extends 'boolean' ? boolean :
+  T extends 'string[]' ? string[] :
+  T extends 'number[]' ? number[] :
+  T extends 'boolean[]' ? boolean[] :
+  never;
+type EntyToReqType<T extends Enty> = {[newK in keyof T]: EntyVToReqTypeV<T[newK]>};
+type reqType<T extends Enty> = EntyToReqType<T>;
 
 /** API共通class */
-export class dbAPI<T extends reqType> {
+export class dbAPI<T extends Enty> {
   // private endpoint: string;
   // private requestPoint: string;
   private endpoint: string;
+  readonly enty: T;
 
   getProcessor: (
-    reqObj: T,
+    reqObj: reqType<T>,
     db: D1Database
   ) => Promise<Response>;
 
   constructor(obj: {
     endpoint: string,
+    readonly enty: T,
     getProcesor: (
-      reqType: T,
+      reqType: reqType<T>,
       db: D1Database
     ) => Promise<Response>
   }) {
     this.endpoint = obj.endpoint;
+    this.enty = obj.enty;
     this.getProcessor = obj.getProcesor;
     return this;
   };
@@ -61,11 +88,69 @@ export class dbAPI<T extends reqType> {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       const url = new URL(req.url);
-      const params = new URLSearchParams(url.search);
-      const token = params.get('token');
+      const requestParams = new URLSearchParams(url.search);
+      const token = requestParams.get('token');
       if (!token) return Response.json({ error: 'without authorization header' }, { status: 401 });
-      token
+      if (typeof token !== 'string') return Response.json({ error: 'wrong token format' }, { status: 401 });
+      if (token !== apiKey) return Response.json({ error: 'wrong token' }, { status: 401 });
+      const entyKeys = Object.keys(this.enty);
+      const requestObj: Record<string, unknown> = {};
+      for (const k of entyKeys) {
+        const rv = requestParams.get(k);
+        const entyV = this.enty[k];
+        switch (entyV) {
+          case 'string':
+            if (rv === null) return Response.json({ error: `missing parameter ${k}` }, { status: 401 });
+            requestObj[k] = rv;
+            break;
+          case 'number':
+            if (rv === null) return Response.json({ error: `missing parameter ${k}` }, { status: 401 });
+            const nv = Number(rv);
+            if (isNaN(nv)) return Response.json({ error: `wrong parameter format ${k}` }, { status: 401 });
+            requestObj[k] = nv;
+            break;
+          case 'boolean':
+            if (rv === null) return Response.json({ error: `missing parameter ${k}` }, { status: 401 });
+            if (rv !== 'true' && rv !== 'false') return Response.json({ error: `wrong parameter format ${k}` }, { status: 401 });
+            requestObj[k] = rv === 'true' ? true : false;
+            break;
+          case 'string[]':
+            {
+              if (rv === null) return Response.json({ error: `missing parameter ${k}` }, { status: 401 });
+              const arr = rv.split(',');
+              requestObj[k] = arr;
+            }
+            break;
+          case 'number[]':
+            {
+              if (rv === null) return Response.json({ error: `missing parameter ${k}` }, { status: 401 });
+              const arr = rv.split(',').map(v => {
+                const nv = Number(v);
+                if (isNaN(nv)) return null;
+                return nv;
+              });
+              if (arr.includes(null)) return Response.json({ error: `wrong parameter format ${k}` }, { status: 401 });
+              requestObj[k] = arr as number[];
+            }
+            break;
+          case 'boolean[]':
+            {
+              if (rv === null) return Response.json({ error: `missing parameter ${k}` }, { status: 401 });
+              const arr = rv.split(',').map(v => {
+                if (v !== 'true' && v !== 'false') return null;
+                return v === 'true' ? true : false;
+              });
+              if (arr.includes(null)) return Response.json({ error: `wrong parameter format ${k}` }, { status: 401 });
+              requestObj[k] = arr as boolean[];
+            }
+            break;
+          default:
+            return Response.json({ error: `wrong enty type ${k}` }, { status: 401 });
+        }
+      }
+
     };
+
     if (!authHeader) return Response.json({ error: 'without authorization header' }, { status: 401 });
   
     // JWT存在確認
@@ -82,7 +167,7 @@ export class dbAPI<T extends reqType> {
       if (!isObject(requestObj)) return Response.json({ error: 'wrong request parameter format' }, { status: 401 });
 
       return func(
-        payload.requestObj as T,
+        payload.requestObj as reqType<T>,
         db
       ); // 型注意
     } catch (e) {

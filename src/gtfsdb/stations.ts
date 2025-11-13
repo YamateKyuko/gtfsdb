@@ -1,8 +1,9 @@
 import { dbAPI } from "../gtfsdbAPI";
 
-const api = new dbAPI<{
-  station_id: number;
-}>({
+const api = new dbAPI({
+  enty: {
+    station_id: 'number',
+  },
   endpoint: 'gtfsdb/stations',
 
   async getProcesor(

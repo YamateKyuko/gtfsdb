@@ -6,6 +6,8 @@
     by Yamakyu
 */
 
+-- 2回ダイクストラ編
+
 
 -- #region テーブル定義
 drop table if exists map.edges;
@@ -78,14 +80,15 @@ create table -- つかってるヨ!!!
   );
 
 
--- drop table if exists dcosts;
--- create table dcosts (
---   id generated always as IDENTITY,
---   pattern_id integer,
---   stop_sequence integer,
---   start_vid integer,
---   end_vid integer
--- );
+drop table if exists map.dcosts;
+create table map.dcosts (
+  id integer generated always as IDENTITY,
+  pattern_id integer,
+  stop_sequence integer,
+  start_vid integer,
+  end_vid integer,
+  cost integer
+);
 
 -- #endregion 
 
@@ -198,6 +201,9 @@ do $$
       update
         map.edges
       set
+
+        -- (apprmul, type) = (100, 'aaa')
+
         (multiplier, type) = (
           (map.edges.multiplier * 10) + (
             map.edges.multiplier *
@@ -217,7 +223,7 @@ do $$
         st_dwithin(
           map.results.geom,
           map.edges.geom,
-          bdist*0.2
+          bdist*0.5
         );
       -- #endregion
 
@@ -407,15 +413,15 @@ do $$
 
 
         -- #region 各バス停間ごとに最短経路を求める
-        select *
-        into strict shortest
+        insert into map.dcosts (pattern_id, stop_sequence, start_vid, end_vid, cost)
+        select stp1.pattern_id, stp1.stop_sequence, start_vid, end_vid, agg_cost
+        -- into strict shortest
         from pgr_Dijkstracost(
           'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 5) as reverse_cost, capacity, reverse_capacity FROM map.edges',
           svids,
           evids
         )
-        order by agg_cost asc
-        limit 1;
+        order by agg_cost asc;
         --#endregion
 
         -- raise notice '--%', shortest.agg_cost;

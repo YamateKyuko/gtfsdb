@@ -1,11 +1,17 @@
 import { dbAPI } from "../gtfsdbAPI";
 
-const api = new dbAPI<{
-  feed_id: number;
-  trip_id: string[];
-  stop_id: string[];
-}>({
+// <{
+//   feed_id: number;
+//   trip_id: string[];
+//   stop_id: string[];
+// }>
+const api = new dbAPI({
   endpoint: 'gtfsdb/stop_patterns',
+  enty: {
+    feed_id: 'number',
+    trip_id: 'string[]',
+    stop_id: 'string[]',
+  },
 
   async getProcesor(
     reqObj,
