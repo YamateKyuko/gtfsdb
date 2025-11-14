@@ -84,11 +84,17 @@ drop table if exists map.dcosts;
 create table map.dcosts (
   id integer generated always as IDENTITY,
   pattern_id integer,
+  p_stop_sequence integer,
   stop_sequence integer,
   start_vid integer,
   end_vid integer,
   cost integer
 );
+
+-- drop table if exists map.dres;
+-- create table map.dres (
+
+-- );
 
 -- #endregion 
 
@@ -106,16 +112,19 @@ do $$
 
     svids integer[];
     evids integer[];
+    fvids integer[];
 
     shortest record;
 
     nid record;
 
     bool boolean;
+    dres record;
+    dpnode integer;
   begin
 
-  select 0.00025 into bdist;
-  select 10000000 into lengthMultiplier;
+    select 0.00025 into bdist;
+    select 10000000 into lengthMultiplier;
 
     /*
       パターンごとに繰り返し
@@ -223,7 +232,7 @@ do $$
         st_dwithin(
           map.results.geom,
           map.edges.geom,
-          bdist*0.5
+          bdist*0.2
         );
       -- #endregion
 
@@ -355,7 +364,7 @@ do $$
       /*
         各バス停間ごとにダイクストラ法で経路を求める
       */
-
+      -- #region
       for stp1 in (select * from stop_patterns where pattern_id = ptn1.pattern_id) loop
         raise notice '  stop_sequence: %', stp1.stop_sequence;
 
@@ -383,8 +392,9 @@ do $$
             coalesce((select st_collect(geom) from map.results where not (stp1.feed_id = feed_id and stp1.route_id = route_id) ), 'point empty'::geometry(point, 4326)),
             -- coalesce(, 'point empty'::geometry(point, 4326)),
             map.vertices.geom,
-            bdist * 0.5
+            bdist * 0.2
           );
+          select svids into fvids;
         end if;
         -- #endregion
 
@@ -407,14 +417,13 @@ do $$
           coalesce((select st_collect(geom) from map.results where not (stp1.feed_id = feed_id and stp1.route_id = route_id)), 'point empty'::geometry(point, 4326)),
           -- coalesce(, 'point empty'::geometry(point, 4326)),
           map.vertices.geom,
-          bdist * 0.5
+          bdist * 0.2
         );
         -- #endregion
 
-
         -- #region 各バス停間ごとに最短経路を求める
-        insert into map.dcosts (pattern_id, stop_sequence, start_vid, end_vid, cost)
-        select stp1.pattern_id, stp1.stop_sequence, start_vid, end_vid, agg_cost
+        insert into map.dcosts (pattern_id, p_stop_sequence, stop_sequence, start_vid, end_vid, cost)
+        select stp1.pattern_id, stp1.stop_sequence - 1, stp1.stop_sequence, start_vid, end_vid, agg_cost
         -- into strict shortest
         from pgr_Dijkstracost(
           'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 5) as reverse_cost, capacity, reverse_capacity FROM map.edges',
@@ -424,16 +433,11 @@ do $$
         order by agg_cost asc;
         --#endregion
 
-        -- raise notice '--%', shortest.agg_cost;
-        raise notice '--%', (select indivmultiplier from map.edges order by indivmultiplier asc limit 1);
+        select evids into svids;
 
-        -- select shortest.cost 
-
-        -- select geom as sg from map.vertices where id = shortest.start_vid;
-        -- select geom as eg from map.vertices where id = shortest.end_vid;
-
-        -- raise notice '%', shortest;
-        select array[shortest.end_vid] into svids;
+        -- #region コメントアウト
+        /*
+        -- #region 停留所挿入
         insert
         into map.pts (
           geom,
@@ -446,9 +450,9 @@ do $$
           stp1.stop_sequence
         from map.vertices
         where id = shortest.end_vid;
+        -- #endregion
 
-        -- svid_set as (select [costlist.end_vid]::integer[] into svids from costlist)
-
+        -- #region ダイクストラ法
         insert into map.results (
           seq,
           path_seq,
@@ -486,7 +490,9 @@ do $$
           (select shortest.end_vid) -- 到着点の頂点ID
         ) as res
         inner join map.edges on (edge = map.edges.id);
+        -- #endregion
 
+        -- #region 短絡
         if (
           select
             case when count(*) >= 3 then true
@@ -571,11 +577,98 @@ do $$
             ;
           end if;
         end if;
-
-        -- update map.edges set indivmultiplier = indivmultiplier * 10000 where id in (select edge from map.results where pattern_id = ptn1.pattern_id and sequence = stp1.stop_sequence);
+        -- #endregion
+        */
+        -- #endregion
 
         select stp1 into stp2;
       end loop;
+      -- #endregion
+
+
+      select * into shortest
+      from pgr_Dijkstracost(
+        $d$SELECT id, start_vid as source, end_vid as target, cost FROM map.dcosts;$d$,
+        fvids,
+        evids
+      )
+      order by agg_cost asc
+      limit 1;
+
+      for dres in (
+        select
+          *
+        from pgr_Dijkstra(
+          $d2$SELECT id, start_vid as source, end_vid as target, cost, cost as reverse_cost FROM map.dcosts$d2$,
+          (select shortest.start_vid), -- 出発点の頂点ID
+          (select shortest.end_vid) -- 到着点の頂点ID
+        ) as res
+      ) loop
+
+        insert into map.pts (
+          geom,
+          pattern_id,
+          stop_sequence
+        )
+        select
+          geom,
+          ptn1.pattern_id,
+          dres.seq
+        from map.vertices
+        where id = dres.node;
+
+        if (dres.seq = 1) then
+          select dres.node into dpnode;
+          continue;
+        end if;
+        raise notice '%', dres.seq;
+      
+        insert into map.results (
+          seq,
+          path_seq,
+          -- start_vid,
+          -- end_vid,
+          node,
+          edge,
+          cost,
+          agg_cost,
+          geom,
+          sequence,
+          pattern_id,
+          feed_id,
+          route_id,
+          length
+        )
+        select
+          seq,
+          path_seq,
+          -- start_vid,
+          -- end_vid,
+          node,
+          edge,
+          res.cost,
+          agg_cost,
+          geom,
+          stp1.stop_sequence,
+          stp1.pattern_id,
+          stp1.feed_id,
+          stp1.route_id,
+          map.edges.length
+        from pgr_Dijkstra(
+          $d2$SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 5) as reverse_cost, capacity, reverse_capacity FROM map.edges$d2$,
+          (select dpnode), -- 出発点の頂点ID
+          (select dres.node) -- 到着点の頂点ID
+        ) as res
+        inner join map.edges on(edge = map.edges.id);
+
+        
+
+        select dres.node into dpnode;
+      end loop;
+
+      delete from map.dcosts;
+
+
 
 
       -- 路線外郭

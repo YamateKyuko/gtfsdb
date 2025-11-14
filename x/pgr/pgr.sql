@@ -428,8 +428,7 @@ do $$
 
         -- raise notice '%', shortest;
         select array[shortest.end_vid] into svids;
-        insert
-        into map.pts (
+        insert into map.pts (
           geom,
           pattern_id,
           stop_sequence

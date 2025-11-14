@@ -1,10 +1,13 @@
 
 
-select * from stop_patterns where pattern_id = 413;
+select * from stop_patterns where pattern_id = 411;
 
 
-
-
+-- select * from pgr_Dijkstracost(
+--   $d$SELECT id, p_stop_sequence || ',' || start_vid, stop_sequence || ',' || end_vid, cost, cost as reverse_cost FROM map.edges$d$,
+--   1, 2
+-- )
+-- select * from stop
 
 
 
