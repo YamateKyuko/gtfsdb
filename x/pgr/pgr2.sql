@@ -83,18 +83,25 @@ create table -- つかってるヨ!!!
 drop table if exists map.dcosts;
 create table map.dcosts (
   id integer generated always as IDENTITY,
+  did integer,
   pattern_id integer,
   p_stop_sequence integer,
   stop_sequence integer,
   start_vid integer,
   end_vid integer,
-  cost integer
+  sdid integer,
+  edid integer,
+  cost float
 );
 
--- drop table if exists map.dres;
--- create table map.dres (
 
--- );
+
+drop table if exists map.dnod;
+create table map.dnod (
+  stop_sequence integer,
+  did integer generated always as IDENTITY,
+  node integer
+);
 
 -- #endregion 
 
@@ -136,7 +143,7 @@ do $$
       --   -- '府７５'
       --   '武７１'
       -- )
-      where feed_id = 1 and pattern_id in (410, 411, 412, 413)
+      where feed_id = 1 and pattern_id in (410, 411, 412, 413, 414)
     ) loop
       raise notice 'pattern_id: %', ptn1.pattern_id;
 
@@ -210,20 +217,17 @@ do $$
       update
         map.edges
       set
-
-        -- (apprmul, type) = (100, 'aaa')
-
         (multiplier, type) = (
-          (map.edges.multiplier * 10) + (
-            map.edges.multiplier *
-            1000 *
-            abs(sin(st_angle(
-              map.edges.geom,
-              map.results.geom
-          )))),
+          (map.edges.multiplier * 10)
+          --  + (
+          --   map.edges.multiplier * 1000 *
+          --   abs(sin(st_angle(
+          --     map.edges.geom,
+          --     map.results.geom
+          -- ))))
+          ,
           'aaa'
         )
-
       from map.results
       where
         (map.results.pattern_id = pptn) and
@@ -394,10 +398,12 @@ do $$
             map.vertices.geom,
             bdist * 0.2
           );
+
           select svids into fvids;
+
+          insert into map.dnod (stop_sequence, node) select 1, unnest(svids);
         end if;
         -- #endregion
-
 
         -- #region 終点側バス停を取得
         with ending as (
@@ -421,17 +427,22 @@ do $$
         );
         -- #endregion
 
+        insert into map.dnod (stop_sequence, node) select stp1.stop_sequence, unnest(evids);
+
         -- #region 各バス停間ごとに最短経路を求める
-        insert into map.dcosts (pattern_id, p_stop_sequence, stop_sequence, start_vid, end_vid, cost)
-        select stp1.pattern_id, stp1.stop_sequence - 1, stp1.stop_sequence, start_vid, end_vid, agg_cost
-        -- into strict shortest
+        insert into map.dcosts (pattern_id, p_stop_sequence, stop_sequence, start_vid, end_vid, sdid, edid, cost)
+        select stp1.pattern_id, stp1.stop_sequence - 1, stp1.stop_sequence, start_vid, end_vid, sd.node, ed.node, agg_cost
         from pgr_Dijkstracost(
-          'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 5) as reverse_cost, capacity, reverse_capacity FROM map.edges',
+          $d$SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 2) as reverse_cost, capacity, reverse_capacity FROM map.edges$d$,
           svids,
           evids
         )
+        inner join map.dnod as sd on (stp1.stop_sequence - 1 = sd.stop_sequence and start_vid = sd.node)
+        inner join map.dnod as ed on (stp1.stop_sequence = ed.stop_sequence and end_vid = ed.node)
         order by agg_cost asc;
         --#endregion
+        raise notice '%', (select count(*) from map.dcosts);
+        raise notice '%', (select count(*) from map.dnod);
 
         select evids into svids;
 
@@ -585,25 +596,31 @@ do $$
       end loop;
       -- #endregion
 
+      raise notice '%', (select count(*) from map.dcosts);
 
       select * into shortest
       from pgr_Dijkstracost(
-        $d$SELECT id, start_vid as source, end_vid as target, cost FROM map.dcosts;$d$,
-        fvids,
-        evids
+        $d$SELECT id, sdid as source, edid as target, cost FROM map.dcosts;$d$,
+        (select array_agg(did) from map.dnod where stop_sequence = 1),
+        (select array_agg(did) from map.dnod where stop_sequence = stp1.stop_sequence)
       )
       order by agg_cost asc
       limit 1;
+
+      raise notice '%,%', (select array_agg(did) from map.dnod where stop_sequence = 1),
+        (select array_agg(did) from map.dnod where stop_sequence = stp1.stop_sequence);
+      raise notice '%', shortest.agg_cost;
 
       for dres in (
         select
           *
         from pgr_Dijkstra(
-          $d2$SELECT id, start_vid as source, end_vid as target, cost, cost as reverse_cost FROM map.dcosts$d2$,
-          (select shortest.start_vid), -- 出発点の頂点ID
-          (select shortest.end_vid) -- 到着点の頂点ID
+          $d2$SELECT id, sdid as source, edid as target, cost, cost as reverse_cost FROM map.dcosts$d2$,
+          (select shortest.start_vid),
+          (select shortest.end_vid)
         ) as res
       ) loop
+        raise notice '%', dres.seq;
 
         insert into map.pts (
           geom,
@@ -615,13 +632,15 @@ do $$
           ptn1.pattern_id,
           dres.seq
         from map.vertices
-        where id = dres.node;
+        inner join map.dnod on (dres.node = dnod.did)
+        where map.vertices.id = dnod.node;
+        
 
         if (dres.seq = 1) then
           select dres.node into dpnode;
           continue;
         end if;
-        raise notice '%', dres.seq;
+        
       
         insert into map.results (
           seq,
@@ -655,9 +674,9 @@ do $$
           stp1.route_id,
           map.edges.length
         from pgr_Dijkstra(
-          $d2$SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 5) as reverse_cost, capacity, reverse_capacity FROM map.edges$d2$,
-          (select dpnode), -- 出発点の頂点ID
-          (select dres.node) -- 到着点の頂点ID
+          $d2$SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 2) as reverse_cost, capacity, reverse_capacity FROM map.edges$d2$,
+          (select sd.node from map.dnod as sd where dpnode = sd.did), -- 出発点の頂点ID
+          (select ed.node from map.dnod as ed where dres.node = ed.did) -- 到着点の頂点ID
         ) as res
         inner join map.edges on(edge = map.edges.id);
 
@@ -666,7 +685,8 @@ do $$
         select dres.node into dpnode;
       end loop;
 
-      delete from map.dcosts;
+      truncate table map.dcosts restart identity;
+      truncate table map.dnod restart identity;
 
 
 
