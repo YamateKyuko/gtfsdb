@@ -25,7 +25,7 @@ export interface ResponsePayload<T extends object> {
 // type Enty<T extends reqType> = reqTypeToEnty<T>;
 
 type Enty = Readonly<Record<string, EntyVs>>;
-type EntyVs = 'string' | 'number' | 'boolean' | 'string[]' | 'number[]' | 'boolean[]';
+type EntyVs = 'string' | 'number' | 'boolean' | 'string[]' | 'number[]' | 'boolean[]' | 'number | null';
 type EntyVToReqTypeV<T extends EntyVs> = 
   T extends 'string' ? string :
   T extends 'number' ? number :
@@ -33,6 +33,7 @@ type EntyVToReqTypeV<T extends EntyVs> =
   T extends 'string[]' ? string[] :
   T extends 'number[]' ? number[] :
   T extends 'boolean[]' ? boolean[] :
+  T extends 'number | null' ? number | null :
   never;
 type EntyToReqType<T extends Enty> = {[newK in keyof T]: EntyVToReqTypeV<T[newK]>};
 type reqType<T extends Enty> = EntyToReqType<T>;

@@ -16,6 +16,9 @@ drop table if exists routes;
 drop table if exists agency;
 drop table if exists feed;
 
+drop table if exists holidays;
+drop table if exists daytype_cnt;
+
 -- drop table if exists stop_offsets;
 
 
@@ -157,7 +160,7 @@ create table stops (
   stop_lon double precision,
   zone_id text,
   stop_url text,
-  location_type integer check (location_type in (0, 1)),
+  location_type integer,
   station_id integer,
   parent_station text,
   stop_timezone text,
@@ -264,3 +267,21 @@ create table translations (
   primary key (feed_id, language, translation_type, record_id)
 );
 -- create index if not exists ix_translations_zone_id on translations(feed_id, fare_id, origine_id, destination_id);
+
+
+create table holidays (
+	holiday_date text,
+	holiday_name text,
+	holiday_day text
+);
+-- 
+
+
+create table daytype_cnt (
+  feed_id integer not null,
+	route_id text not null,
+	pattern_id integer not null,
+	daytype text,
+	cnt integer not null
+);
+-- 

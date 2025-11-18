@@ -34,10 +34,7 @@ ARRY=(
 # )
 
 echo "--> 仮テーブル設定"
-psql gtfsdb \
-  -U $pguser \
-  -p 5432 \
-  -f ./sql/raw_tables.sql
+source execsql.sh ./sql/raw_tables.sql
 
 echo "--> CSVからコピー"
 for IDX in `seq 1 11`
@@ -48,6 +45,7 @@ do
     psql gtfsdb \
       -U $pguser \
       -p 5432 \
+      -v ON_ERROR_STOP=1 \
       -c "copy r.${ARRY[$IDX]}(${CLMN}) from '${DRCT}/unzipped/${ARRY[$IDX]}.txt' with (format csv, delimiter ',', header match);"
   else
     echo "--> ${ARRY[$IDX]}.txtは存在しません"
@@ -58,4 +56,5 @@ echo "--> feed_idの付加"
 psql gtfsdb \
   -U $pguser \
   -p 5432 \
+  -v ON_ERROR_STOP=1 \
   -c "select r.feed_ider($FEID);"

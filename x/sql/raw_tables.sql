@@ -113,7 +113,7 @@ create table r.trips (
 );
 
 -- stop_id,stop_code,stop_name,stop_desc,stop_lat,stop_lon,zone_id,stop_url,location_type,parent_station,stop_timezone,wheelchair_boarding,level_id,platform_code
--- stop_id,stop_code,stop_name,stop_desc,stop_lat,stop_lon,zone_id,stop_url,location_type,parent_station,stop_timezone,wheelchair_boarding,         platform_code
+-- stop_id,stop_code,stop_name,stop_desc,stop_lat,stop_lon,zone_id,stop_url,location_type,parent_station,stop_timezone,wheelchair_boarding,platform_code,stop_access
 drop table if exists r.stops cascade;
 create table r.stops (
   feed_id integer,
@@ -125,7 +125,7 @@ create table r.stops (
   stop_lon double precision,
   zone_id varchar(63),
   stop_url varchar(255),
-  location_type integer check (location_type in (0, 1)),
+  location_type integer,
   parent_station varchar(63),
   stop_timezone varchar(15),
   wheelchair_boarding integer check (wheelchair_boarding in (0, 1, 2)),

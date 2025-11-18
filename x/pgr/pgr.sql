@@ -59,7 +59,7 @@ create table
     cost float,
     agg_cost float,
     geom geometry,
-    sequence integer,
+    stop_sequence integer,
     pattern_id integer,
     feed_id integer,
     route_id varchar(256),
@@ -452,7 +452,7 @@ do $$
           cost,
           agg_cost,
           geom,
-          sequence,
+          stop_sequence,
           pattern_id,
           feed_id,
           route_id,
@@ -487,10 +487,10 @@ do $$
           from map.results
           where
             pattern_id = ptn1.pattern_id and
-            sequence = stp1.stop_sequence
+            stop_sequence = stp1.stop_sequence
         ) then
           with reses as (
-            select * from map.results where pattern_id = ptn1.pattern_id and sequence = stp1.stop_sequence
+            select * from map.results where pattern_id = ptn1.pattern_id and stop_sequence = stp1.stop_sequence
           ),
           aggcost as (
             select sum(length) as l from reses
@@ -504,7 +504,7 @@ do $$
           )
           select ((select l from shortestlength) * 10 < (select l from aggcost)) into bool;
           if (bool) then
-            delete from map.results where pattern_id = ptn1.pattern_id and sequence = stp1.stop_sequence;
+            delete from map.results where pattern_id = ptn1.pattern_id and stop_sequence = stp1.stop_sequence;
             insert into map.edges (
               type,
               pattern_id,
@@ -542,7 +542,7 @@ do $$
               cost,
               agg_cost,
               geom,
-              sequence,
+              stop_sequence,
               pattern_id,
               feed_id,
               route_id,
@@ -565,7 +565,7 @@ do $$
           end if;
         end if;
 
-        -- update map.edges set indivmultiplier = indivmultiplier * 10000 where id in (select edge from map.results where pattern_id = ptn1.pattern_id and sequence = stp1.stop_sequence);
+        -- update map.edges set indivmultiplier = indivmultiplier * 10000 where id in (select edge from map.results where pattern_id = ptn1.pattern_id and stop_sequence = stp1.stop_sequence);
 
         select stp1 into stp2;
       end loop;

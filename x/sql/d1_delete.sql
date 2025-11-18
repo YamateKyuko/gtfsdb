@@ -31,3 +31,6 @@ delete from services;
 delete from routes;
 delete from agency;
 delete from feed;
+
+delete from holidays;
+delete from daytype_cnt;

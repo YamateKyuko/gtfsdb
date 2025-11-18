@@ -1,3 +1,6 @@
+select * from trip_patterns where route_name = '調３４' 
+-- order by pattern_id, stop_sequence;
+
 -- with ptns as (
 --   select stop_patterns.*, station_id
 --   from stop_patterns inner join stops using (feed_id, stop_id) where route_name = '武７３'
@@ -45,30 +48,30 @@
 
 
 
-with ptns as (
-  select
-    stop_patterns.*,
-    station_id,
-    (select case direction_id
-      when 0 then stop_sequence
-      when 1 then stop_sequence * -1
-      -- (last_value(stop_sequence) over(partition by pattern_id order by stop_sequence)) - stop_sequence + 1
-    end) as rsq
-  from stop_patterns inner join stops using (feed_id, stop_id) where route_name = '武７３'
-),
-a as (
-  select distinct on (feed_id, route_id) feed_id, route_id, stop_id as bst from ptns
-),
-b as (
-  select 
-    ptns.*,
-    a.bst,
-    (ptns.stop_sequence - pb.stop_sequence) as bdst
+-- with ptns as (
+--   select
+--     stop_patterns.*,
+--     station_id,
+--     (select case direction_id
+--       when 0 then stop_sequence
+--       when 1 then stop_sequence * -1
+--       -- (last_value(stop_sequence) over(partition by pattern_id order by stop_sequence)) - stop_sequence + 1
+--     end) as rsq
+--   from stop_patterns inner join stops using (feed_id, stop_id) where route_name = '武７３'
+-- ),
+-- a as (
+--   select distinct on (feed_id, route_id) feed_id, route_id, stop_id as bst from ptns
+-- ),
+-- b as (
+--   select 
+--     ptns.*,
+--     a.bst,
+--     (ptns.stop_sequence - pb.stop_sequence) as bdst
 
 
-  from ptns
-  inner join a using(feed_id, route_id)
-  inner join ptns as pb on ptns.pattern_id = pb.pattern_id and pb.stop_id = a.bst
-  order by pattern_id, rsq
-)
-select * from b order by bdst;
+--   from ptns
+--   inner join a using(feed_id, route_id)
+--   inner join ptns as pb on ptns.pattern_id = pb.pattern_id and pb.stop_id = a.bst
+--   order by pattern_id, rsq
+-- )
+-- select * from b order by bdst;

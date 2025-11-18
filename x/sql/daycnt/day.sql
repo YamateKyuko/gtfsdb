@@ -1,12 +1,3 @@
--- drop table if exists daytype_cnt;
--- create table daytype_cnt (
--- 	feed_id integer not null,
--- 	route_id varchar(255) not null,
--- 	pattern_id integer not null,
--- 	daytype varchar(2),
--- 	cnt integer not null
--- );
-
 insert into daytype_cnt (
 	feed_id,
 	route_id,
@@ -21,8 +12,8 @@ with by_day as (
 		route_id,
 		date,
 		count(*) as day_cnt,
-		ud_to_day(date) as dow,
-		ud_to_daytype(date) as dty
+		ud_to_day(to_date(date, 'YYYY-MM-DD')) as dow,
+		ud_to_daytype(to_date(date, 'YYYY-MM-DD')) as dty
 	from trips
 	inner join calendar as cal
 		using (feed_id, service_id)

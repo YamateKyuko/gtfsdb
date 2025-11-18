@@ -138,7 +138,7 @@ create table stops (
   stop_lon double precision,
   zone_id varchar(63),
   stop_url varchar(255),
-  location_type integer check (location_type in (0, 1)),
+  location_type integer,
   station_id integer,
   parent_station varchar(255),
   stop_timezone varchar(15),
@@ -265,7 +265,7 @@ create table translations (
 
 drop table if exists holidays;
 create table holidays (
-	holiday_date date,
+	holiday_date varchar(15),
 	holiday_name varchar(31),
 	holiday_day varchar(3)
 );
@@ -304,7 +304,7 @@ create function ud_is_holiday(date) returns bool as $$
 select 
 holiday_name is not null
 from holidays
-where holiday_date = $1
+where holiday_date = to_char($1, 'YYYY-MM-DD')
 limit 1;
 $$ language sql;
 

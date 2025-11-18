@@ -61,7 +61,7 @@ create table
     cost float,
     agg_cost float,
     geom geometry,
-    sequence integer,
+    stop_sequence integer,
     pattern_id integer,
     feed_id integer,
     route_id varchar(256),
@@ -143,7 +143,7 @@ do $$
       --   -- '府７５'
       --   '武７１'
       -- )
-      where feed_id = 1 and pattern_id in (410, 411, 412, 413, 414)
+      where feed_id = 1 and pattern_id in (410, 411, 412, 413, 414, 415)
     ) loop
       raise notice 'pattern_id: %', ptn1.pattern_id;
 
@@ -218,13 +218,12 @@ do $$
         map.edges
       set
         (multiplier, type) = (
-          (map.edges.multiplier * 10)
-          --  + (
-          --   map.edges.multiplier * 1000 *
-          --   abs(sin(st_angle(
-          --     map.edges.geom,
-          --     map.results.geom
-          -- ))))
+          (map.edges.multiplier * 2) + (
+            map.edges.multiplier * 5 *
+            abs(sin(st_angle(
+              map.edges.geom,
+              map.results.geom
+          ))))
           ,
           'aaa'
         )
@@ -431,7 +430,7 @@ do $$
 
         -- #region 各バス停間ごとに最短経路を求める
         insert into map.dcosts (pattern_id, p_stop_sequence, stop_sequence, start_vid, end_vid, sdid, edid, cost)
-        select stp1.pattern_id, stp1.stop_sequence - 1, stp1.stop_sequence, start_vid, end_vid, sd.node, ed.node, agg_cost
+        select stp1.pattern_id, stp1.stop_sequence - 1, stp1.stop_sequence, start_vid, end_vid, sd.did, ed.did, agg_cost
         from pgr_Dijkstracost(
           $d$SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 2) as reverse_cost, capacity, reverse_capacity FROM map.edges$d$,
           svids,
@@ -446,152 +445,6 @@ do $$
 
         select evids into svids;
 
-        -- #region コメントアウト
-        /*
-        -- #region 停留所挿入
-        insert
-        into map.pts (
-          geom,
-          pattern_id,
-          stop_sequence
-        )
-        select
-          geom,
-          ptn1.pattern_id,
-          stp1.stop_sequence
-        from map.vertices
-        where id = shortest.end_vid;
-        -- #endregion
-
-        -- #region ダイクストラ法
-        insert into map.results (
-          seq,
-          path_seq,
-          -- start_vid,
-          -- end_vid,
-          node,
-          edge,
-          cost,
-          agg_cost,
-          geom,
-          sequence,
-          pattern_id,
-          feed_id,
-          route_id,
-          length
-        )
-        select
-          seq,
-          path_seq,
-          -- start_vid,
-          -- end_vid,
-          node,
-          edge,
-          res.cost,
-          agg_cost,
-          geom,
-          stp1.stop_sequence,
-          stp1.pattern_id,
-          stp1.feed_id,
-          stp1.route_id,
-          map.edges.length
-        from pgr_Dijkstra(
-          'SELECT id, source, target, (length * multiplier * indivmultiplier) as cost, (length * multiplier * indivmultiplier * 5) as reverse_cost, capacity, reverse_capacity FROM map.edges',
-          (select shortest.start_vid), -- 出発点の頂点ID
-          (select shortest.end_vid) -- 到着点の頂点ID
-        ) as res
-        inner join map.edges on (edge = map.edges.id);
-        -- #endregion
-
-        -- #region 短絡
-        if (
-          select
-            case when count(*) >= 3 then true
-            else false end
-          from map.results
-          where
-            pattern_id = ptn1.pattern_id and
-            sequence = stp1.stop_sequence
-        ) then
-          with reses as (
-            select * from map.results where pattern_id = ptn1.pattern_id and sequence = stp1.stop_sequence
-          ),
-          aggcost as (
-            select sum(length) as l from reses
-          ),
-          shortestlength as (
-            select
-              st_distance(
-                (select geom from map.vertices where id = shortest.start_vid),
-                (select geom from map.vertices where id = shortest.end_vid)
-              ) * lengthMultiplier as l
-          )
-          select ((select l from shortestlength) * 10 < (select l from aggcost)) into bool;
-          if (bool) then
-            delete from map.results where pattern_id = ptn1.pattern_id and sequence = stp1.stop_sequence;
-            insert into map.edges (
-              type,
-              pattern_id,
-              feed_id,
-              route_id,
-              geom,
-              length,
-              multiplier,
-              source,
-              target
-            )
-            select
-              '短絡' as type,
-              ptn1.pattern_id,
-              ptn1.feed_id,
-              ptn1.route_id,
-              geom,
-              st_length(geom) * lengthmultiplier as length,
-              1 as multiplier,
-              shortest.start_vid,
-              shortest.end_vid
-            from (
-              select st_makeline(
-                (select geom from map.vertices where id = shortest.start_vid),
-                (select geom from map.vertices where id = shortest.end_vid)
-              ) as geom
-            )
-            returning * into nid;
-
-            insert into map.results (
-              seq,
-              path_seq,
-              node,
-              edge,
-              cost,
-              agg_cost,
-              geom,
-              sequence,
-              pattern_id,
-              feed_id,
-              route_id,
-              length
-            )
-            select
-              null as seq,
-              null as path_seq,
-              shortest.start_vid,
-              nid.id,
-              nid.length,
-              0,
-              nid.geom,
-              stp1.stop_sequence,
-              stp1.pattern_id,
-              stp1.feed_id,
-              stp1.route_id,
-              nid.length
-            ;
-          end if;
-        end if;
-        -- #endregion
-        */
-        -- #endregion
-
         select stp1 into stp2;
       end loop;
       -- #endregion
@@ -601,6 +454,7 @@ do $$
       select * into shortest
       from pgr_Dijkstracost(
         $d$SELECT id, sdid as source, edid as target, cost FROM map.dcosts;$d$,
+        -- fvids,evids
         (select array_agg(did) from map.dnod where stop_sequence = 1),
         (select array_agg(did) from map.dnod where stop_sequence = stp1.stop_sequence)
       )
@@ -652,7 +506,7 @@ do $$
           cost,
           agg_cost,
           geom,
-          sequence,
+          stop_sequence,
           pattern_id,
           feed_id,
           route_id,
@@ -668,7 +522,7 @@ do $$
           res.cost,
           agg_cost,
           geom,
-          stp1.stop_sequence,
+          dres.seq - 1,
           stp1.pattern_id,
           stp1.feed_id,
           stp1.route_id,

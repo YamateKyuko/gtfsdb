@@ -1,91 +1,27 @@
+select 
+  json_object(
+    'feed_id': feed_id,
+    'route_id': route_id,
+    'route_name': route_name,
+    -- 'route_desc': route_desc,
+    
+    'route_type': route_type
+    -- 'stop_patterns', json_group_array(
+    --   json_object(
+    --     'feed_id', feed_id,
+    --     'pattern_id', pattern_id,
+    --     'route_id', route_id,
+    --     'stop_sequence', stop_sequence,
+    --     'direction_id', direction_id,
+    --     'route_name', route_name
+    --   )
+    -- )
+  ) as obj
+from stop_patterns as ptn
+WHERE 
+  feed_id = 1 and
+  route_id = '452'
+  -- pattern_id in (412, 413)
+limit 1;
 
-
-select * from stop_patterns where pattern_id = 411;
-
-
--- select * from pgr_Dijkstracost(
---   $d$SELECT id, p_stop_sequence || ',' || start_vid, stop_sequence || ',' || end_vid, cost, cost as reverse_cost FROM map.edges$d$,
---   1, 2
--- )
--- select * from stop
-
-
-
-
--- with extent as (
---   select
---     st_extent(
---       st_transform(geom, 3857)
---     ) as e
---   from map.results),
--- level as (
---   select l from (values(14), (12)) as t(l)
--- ),
--- basetile as (
---   select
---     st_transform(st_tileenvelope(0,0,0), 3857) as b),
--- baseedge as (
---   select
---     (st_xmax(b) - st_xmin(b)) as xh,
---     (st_ymax(b) - st_ymin(b)) as yh
---   from basetile),
--- tileedge as (
---   select
---     (xh / (2 ^ l)) as xth,
---     (yh / (2 ^ l)) as yth,
---     l
---   from baseedge, level),
--- xseri as (
---   select
---     generate_series(
---       (floor((st_xmin(e) + (xh / 2)) / xth))::integer,
---       (floor((st_xmax(e) + (xh / 2)) / xth))::integer
---     ) as x,
---     l
---   from tileedge, extent, baseedge),
--- yseri as (
---   select
---     generate_series(
---       (floor((-st_ymax(e) + (yh / 2)) / yth))::integer,
---       (floor((-st_ymin(e) + (yh / 2)) / yth))::integer
---     ) as y,
---     l
---   from tileedge, extent, baseedge),
--- tiles as (
---   select
---     x,
---     y,
---     xseri.l as z,
---     st_tileenvelope(xseri.l, x, y) as tile
---     from xseri
---     cross join yseri
---     where xseri.l = yseri.l),
--- mvtgeoms as (
---   select
---     x, y, z,
-
---     -- concat(x, '_', y, '_', z) as gid,
---     st_asmvtgeom(st_transform(geom, 3857), tile, 4096, 256) as mvtg
---     -- pattern_id
---   from tiles, map.results
---   where tile && st_transform(geom, 3857)
--- )
--- -- insert into map.mvts(data, x, y, z)
--- -- select
--- -- -- st_astext(mvtg),
--- --   st_asmvt(
--- --     (SELECT mvtg
--- --       FROM mvtgeoms
--- --       -- WHERE geom && TileBBox(14, 14567, 6427, 3857)
--- --     ),
--- --     -- mvtgeoms.*, -- row
--- --     'defa', -- name (layer)
--- --     4096, -- extent
--- --     'mvtg' -- geom_name
--- --     -- 'gid'
--- --   )
--- --   -- x,
--- --   -- y,
--- --   -- z
--- -- from mvtgeoms;
--- -- group by x, y, z;
+-- select * from stop_patterns where route_name = '武７３' order by pattern_id, stop_sequence;
