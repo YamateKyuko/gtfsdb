@@ -22,10 +22,10 @@ const api = new dbAPI({
       stop_sequence: stopSequence
     } = reqObj;
 
-    let results;
+    let res;
 
     if (!stopSequence) {
-      results = await db.prepare(`
+      res = await db.prepare(`
         SELECT 
           feed_id,
           trip_id,
@@ -47,8 +47,9 @@ const api = new dbAPI({
         .bind(...[feedId, tripId])
         .all();
     } else {
-      results = await db.prepare(`
-with curr_zone_id as (select zone_id from stop_times inner join stops using(feed_id, stop_id) where feed_id = $1 and trip_id = $2 and stop_sequence = $3)
+      res = await db.prepare(`
+with curr_zone_id as (select zone_id from stop_times inner join stops using(feed_id, stop_id) where feed_id = $1 and trip_id = $2 and stop_sequence = $3),
+fare_rule as (select fare_rules.* from trips inner join routes using(feed_id, route_id) inner join fare_rules using(feed_id, route_id) where feed_id = $1 and trip_id = $2 group by fare_rules.feed_id, fare_rules.route_id, fare_id, origin_id, destination_id)
 SELECT 
   stop_times.feed_id,
   trip_id,
@@ -67,17 +68,21 @@ FROM stop_times
 inner join stops using (feed_id, stop_id)
 inner join trips using (feed_id, trip_id)
 inner join curr_zone_id on true
-left join fare_rules on (
-  stop_times.feed_id = fare_rules.feed_id and
-  trips.route_id = fare_rules.route_id and
-  (
+left join fare_rule as fare_rules on (
+  -- stop_times.feed_id = fare_rules.feed_id and
+  -- trips.route_id = fare_rules.route_id and
+  ((
+    fare_rules.origin_id is null and
+    fare_rules.destination_id is null and
+    stop_times.stop_sequence != $3
+  ) or (
     stop_times.stop_sequence < $3 and (
       fare_rules.origin_id = stops.zone_id and
       fare_rules.destination_id = curr_zone_id.zone_id) or
     stop_times.stop_sequence > $3 and (
       fare_rules.destination_id = stops.zone_id and
       fare_rules.origin_id = curr_zone_id.zone_id)
-  )
+  ))
 )
 left join fare_attributes on (
   stop_times.feed_id = fare_attributes.feed_id and
@@ -91,7 +96,7 @@ order by stop_sequence;
         .all();
     }
 
-
+    const { results } = res;
     
     if (!results) return Response.json([]);
     
