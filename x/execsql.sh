@@ -12,5 +12,5 @@ psql gtfsdb \
 if [ $? != 0 ]
 then
   echo "ERROR: SQL実行失敗 ($PA)"
-  return
+  return 1
 fi

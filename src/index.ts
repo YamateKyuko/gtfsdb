@@ -12,6 +12,7 @@ export interface Env {
   mvts: KVNamespace;
   GTFSDB_API_KEY?: string;
   TEST_API_KEY?: string;
+  // ASSETS: assets;
 }
 
 export default {
@@ -24,6 +25,8 @@ export default {
     if (!apiKey) return Response.json({gtfsdb: 'Key not Found'}, { status: 404 })
 
     // パス仕分け
+    // const html = '<div>hello</div>'
+    // if (paths[1] == 'info') return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html' } });
     if (!(paths[1] == 'api')) return Response.json({gtfsdb: 'Not Found'}, { status: 404 })
 
     switch (paths[2]) {

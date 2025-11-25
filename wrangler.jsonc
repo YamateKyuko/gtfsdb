@@ -64,6 +64,10 @@
       "remote": true
     }
   ],
+  // "assets": {
+  //   "directory": "./public",
+  //   "binding": "ASSETS"
+  // },
 
 	"compatibility_flags": ["nodejs_compat"]
 }

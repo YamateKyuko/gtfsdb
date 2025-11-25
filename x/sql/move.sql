@@ -320,21 +320,21 @@ on conflict do nothing;
 
 insert into translations (
   feed_id,
+  table_name,
+  field_name,
   language,
-  translation_type,
   translation,
-  record_id
+  record_id,
+  record_sub_id,
+  field_value
 )
 select
-  r.translations.feed_id,
+  feed_id,
+  table_name,
+  field_name,
   language,
-  'stop_name',
   translation,
-  stop_id
-from r.translations
-inner join stops on
-  r.translations.feed_id = stops.feed_id and
-  r.translations.record_id = stops.stop_id
-where 
-  table_name = 'stops' and
-  field_name = 'stop_name';
+  record_id,
+  record_sub_id,
+  field_value
+from r.translations;

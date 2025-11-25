@@ -187,9 +187,9 @@ create table r.translations (
   field_name varchar(63) not null,
   language varchar(15) not null, -- 言語
   translation varchar(255) not null, -- 翻訳先
-  record_id varchar(63) not null,
-  record_sub_id varchar(63) not null,
-  field_value varchar(255) not null -- 翻訳元
+  record_id varchar(63),
+  record_sub_id varchar(63),
+  field_value varchar(255) -- 翻訳元
 );
 
 

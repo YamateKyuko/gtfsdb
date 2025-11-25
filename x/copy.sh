@@ -21,6 +21,9 @@ ARRY=(
   "translations"
 )
 
+# 配列の要素数を取得
+ARRY_L=${#ARRY[@]}
+
 # COLS=(
 #   "feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version"
 #   "agency_id,agency_name,agency_url,agency_timezone,agency_lang,agency_phone,agency_fare_url,agency_email"
@@ -37,7 +40,7 @@ echo "--> 仮テーブル設定"
 source execsql.sh ./sql/raw_tables.sql
 
 echo "--> CSVからコピー"
-for IDX in `seq 1 11`
+for IDX in `seq 1 ${ARRY_L}`;
 do
   if [ -e "${DRCT}/unzipped/${ARRY[$IDX]}.txt" ]; then
     echo "--> ${ARRY[$IDX]}.txtの処理"
@@ -58,3 +61,8 @@ psql gtfsdb \
   -p 5432 \
   -v ON_ERROR_STOP=1 \
   -c "select r.feed_ider($FEID);"
+
+# echo "--> feed_id待機"
+# sleep 10
+
+echo "--> コピー完了"

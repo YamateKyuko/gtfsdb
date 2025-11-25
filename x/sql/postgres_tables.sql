@@ -236,22 +236,46 @@ create table fare_rules (
   origin_id varchar(63),
   destination_id varchar(63),
   constraint fk_fare_rules_fare_id foreign key (feed_id, fare_id) references fare_attributes(feed_id, fare_id) on delete cascade on update cascade,
-  constraint fk_fare_rules_route_id foreign key (feed_id, route_id) references routes(feed_id, route_id) on delete cascade on update cascade
+  constraint fk_fare_rules_route_id foreign key (feed_id, route_id) references routes(feed_id, route_id) on delete cascade on update cascade,
+  unique(feed_id, fare_id, route_id, origin_id, destination_id)
 );
 -- create index if not exists ix_fare_rules_zone_id on fare_rules(feed_id, fare_id, origine_id, destination_id);
 
 drop table if exists translations cascade;
 create table translations (
+  -- feed_id integer,
+  -- table_name varchar(63) not null,
+  -- field_name varchar(63) not null,
+  -- language varchar(15) not null, -- 言語
+  -- translation varchar(255) not null, -- 翻訳先
+  -- record_id varchar(63) not null,
+  -- record_sub_id varchar(63) not null,
+  -- field_value varchar(255) not null -- 翻訳元
+
+
   feed_id smallint not null,
+  table_name varchar(63) not null check (table_name in ('agency', 'stops', 'routes', 'trips', 'stop_times', 'feed_info')),
+  field_name varchar(63) not null,
   language varchar(15) not null check (language in ('ja', 'ja-Hrkt', 'en')), -- 言語
-  translation_type varchar(63) not null check (translation_type in ('stop_name')),
   translation varchar(255) not null, -- 翻訳先
-  record_id varchar(63) not null,
-  primary key (feed_id, language, translation_type, record_id)
+  record_id varchar(63),
+  record_sub_id varchar(63),
+  field_value varchar(255) -- 翻訳元
+
+
+  -- translation_type varchar(63) not null check (translation_type in ('stop_name')),
+  -- record_id varchar(63) not null,
+  -- primary key (feed_id, language, translation_type, record_id)
 );
--- create index if not exists ix_translations_zone_id on translations(feed_id, fare_id, origine_id, destination_id);
 
-
+-- drop table if exists stop_translations cascade;
+-- create table stop_translations (
+--   feed_id smallint not null,
+--   stop_id varchar(63) not null,
+--   language varchar(15) not null check (language in ('ja', 'ja-Hrkt', 'en')), -- 言語
+--   translation varchar(255) not null, -- 翻訳先
+--   primary key (feed_id, language, stop_id)
+-- );
 
 
 
