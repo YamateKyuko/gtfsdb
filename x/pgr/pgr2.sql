@@ -143,7 +143,7 @@ do $$
       --   -- '府７５'
       --   '武７１'
       -- )
-      -- where feed_id = 1 and pattern_id in (390, 391)
+      where feed_id = 1 and pattern_id in (390,391)
       -- from stop_patterns
       -- inner join trip_patterns using(feed_id, pattern_id)
       -- where stop_name = '農業高校'
@@ -201,7 +201,7 @@ do $$
 
       -- #region 同じ系統のバス路線は同じ場所を走らせる
       with reses as (select edge as id from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id)
-      update map.edges set indivmultiplier = 0.0000001 where id in (select id from reses);
+      update map.edges set indivmultiplier = 0.01 where id in (select id from reses);
       -- with geoms as (select st_collect(geom) as g from map.results where feed_id = ptn1.feed_id and route_id = ptn1.route_id)
       -- update map.edges set indivmultiplier = 0.00001 from geoms where st_dwithin(
       --   coalesce(geoms.g, 'point empty'::geometry(point, 4326)),
@@ -284,7 +284,7 @@ do $$
         group by id1, g1
       ),
       collection AS (
-        SELECT id1, (st_dump(st_split(st_snap(g1, blade, 0.01), blade))).*
+        SELECT id1, (st_dump(st_split(st_snap(g1, blade, 0.00001), blade))).*
         FROM blades
       )
       SELECT
@@ -307,7 +307,7 @@ do $$
         length
       )
       select ptn1.pattern_id, id, geom, '分割', 100000000, 1
-      from pgr_separateCrossing('SELECT id, geom FROM map.edges', 0.00000001);
+      from pgr_separateCrossing('SELECT id, geom FROM map.edges', 0.00001);
       -- #endregion
 
       -- #region 新規エッジ通過コスト挿入
