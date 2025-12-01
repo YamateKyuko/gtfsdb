@@ -24,10 +24,28 @@ export interface ResponsePayload<T extends object> {
 // type reqTypeToEnty<T extends reqType> = Readonly<{[newK in keyof T]: reqTypeVToEntyV<T[newK]>}>;
 // type Enty<T extends reqType> = reqTypeToEnty<T>;
 
+// const Size: {
+//   e: number;
+//   k: number;
+//   m?: number;
+// } = {
+//   e: 1024,
+//   k: 1024 ** 2,
+//   // m: 1024 ** 3,
+// };
+
+// const {
+//   e: E,
+//   k: K,
+//   m: M,
+// } = Size;
+
 type Enty = Readonly<Record<string, EntyVs>>;
-type EntyVs = 'string' | 'number' | 'boolean' | 'string[]' | 'number[]' | 'boolean[]' | 'number | null';
-type EntyVToReqTypeV<T extends EntyVs> = 
+type EntyVs = stringV | 'number' | 'boolean' | 'string[]' | 'number[]' | 'boolean[]' | 'number | null';
+type stringV= `${'?' | ''}string`;
+type EntyVToReqTypeV<T extends EntyVs | undefined> = 
   T extends 'string' ? string :
+  T extends `?string` ? string | undefined :
   T extends 'number' ? number :
   T extends 'boolean' ? boolean :
   T extends 'string[]' ? string[] :
@@ -35,8 +53,15 @@ type EntyVToReqTypeV<T extends EntyVs> =
   T extends 'boolean[]' ? boolean[] :
   T extends 'number | null' ? number | null :
   never;
-type EntyToReqType<T extends Enty> = {[newK in keyof T]: EntyVToReqTypeV<T[newK]>};
-type reqType<T extends Enty> = EntyToReqType<T>;
+// type isOptional<T> = T extends `?${string}` ? T : never;
+// type EntyOptionalKeys<T extends Enty> = isOptional<T[keyof T]>;
+// type EntyRequiredKeys<T extends Enty> = Extract<keyof T, isOptional<T[keyof T]>>;
+// type EntyToReqType<T extends Enty> = Omit<T, isOptional<K in keyof T>> & Partial<Pick<T, K>>;
+
+
+// type reqType<T extends Enty> = EntyToReqType<T>;
+// type ks<T extends Enty> = keyof Enty;
+type reqType<T extends Enty> = {[newK in keyof T]: EntyVToReqTypeV<T[newK]>;};
 
 /** API共通class */
 export class dbAPI<T extends Enty> {

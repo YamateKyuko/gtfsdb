@@ -36,13 +36,21 @@ from stop_patterns as p
 inner join trips using(feed_id, pattern_id)
 inner join stop_times using(feed_id, trip_id, stop_sequence)
 where
-  p.feed_id = $1 and
-  p.route_id = $4 and
-  (p.feed_id, p.stop_id) in (select feed_id, stop_id from stops where station_id = $2) and
-  (p.feed_id, p.next_stop_id) in (select feed_id, stop_id from stops where station_id = $3);
-  `)
-      .bind(...[feedId, stationId, nextStationId, routeId])
+  p.feed_id = ?1 and
+  p.route_id = ?4 and
+  (p.feed_id, p.stop_id) in (select feed_id, stop_id from stops where station_id = ?2) and
+  (p.feed_id, p.next_stop_id) in (select feed_id, stop_id from stops where station_id = ?3);
+  `,
+    )
+      .bind(...[
+        feedId,
+        stationId,
+        nextStationId,
+        routeId,
+      ])
       .all();
+    console.log('feedId:',feedId,'stationId:',stationId,'nextStationId:',nextStationId,'routeId:',routeId);
+    console.log('r:',results);
     
     if (!results) return Response.json([]);
     

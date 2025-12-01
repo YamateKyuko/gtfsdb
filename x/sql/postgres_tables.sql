@@ -241,32 +241,32 @@ create table fare_rules (
 );
 -- create index if not exists ix_fare_rules_zone_id on fare_rules(feed_id, fare_id, origine_id, destination_id);
 
-drop table if exists translations cascade;
-create table translations (
-  -- feed_id integer,
-  -- table_name varchar(63) not null,
-  -- field_name varchar(63) not null,
-  -- language varchar(15) not null, -- 言語
-  -- translation varchar(255) not null, -- 翻訳先
-  -- record_id varchar(63) not null,
-  -- record_sub_id varchar(63) not null,
-  -- field_value varchar(255) not null -- 翻訳元
+-- drop table if exists translations cascade;
+-- create table translations (
+--   -- feed_id integer,
+--   -- table_name varchar(63) not null,
+--   -- field_name varchar(63) not null,
+--   -- language varchar(15) not null, -- 言語
+--   -- translation varchar(255) not null, -- 翻訳先
+--   -- record_id varchar(63) not null,
+--   -- record_sub_id varchar(63) not null,
+--   -- field_value varchar(255) not null -- 翻訳元
 
 
-  feed_id smallint not null,
-  table_name varchar(63) not null check (table_name in ('agency', 'stops', 'routes', 'trips', 'stop_times', 'feed_info')),
-  field_name varchar(63) not null,
-  language varchar(15) not null check (language in ('ja', 'ja-Hrkt', 'en')), -- 言語
-  translation varchar(255) not null, -- 翻訳先
-  record_id varchar(63),
-  record_sub_id varchar(63),
-  field_value varchar(255) -- 翻訳元
+--   feed_id smallint not null,
+--   table_name varchar(63) not null check (table_name in ('agency', 'stops', 'routes', 'trips', 'stop_times', 'feed_info')),
+--   field_name varchar(63) not null,
+--   language varchar(15) not null check (language in ('ja', 'ja-Hrkt', 'en')), -- 言語
+--   translation varchar(255) not null, -- 翻訳先
+--   record_id varchar(63),
+--   record_sub_id varchar(63),
+--   field_value varchar(255) -- 翻訳元
 
 
-  -- translation_type varchar(63) not null check (translation_type in ('stop_name')),
-  -- record_id varchar(63) not null,
-  -- primary key (feed_id, language, translation_type, record_id)
-);
+--   -- translation_type varchar(63) not null check (translation_type in ('stop_name')),
+--   -- record_id varchar(63) not null,
+--   -- primary key (feed_id, language, translation_type, record_id)
+-- );
 
 -- drop table if exists stop_translations cascade;
 -- create table stop_translations (
@@ -277,6 +277,46 @@ create table translations (
 --   primary key (feed_id, language, stop_id)
 -- );
 
+drop table if exists stop_name_translations cascade;
+create table stop_name_translations (
+  feed_id smallint not null,
+  stop_id varchar(63),
+  language varchar(7) not null,
+  translation varchar(255),
+  stop_name varchar(255),
+  unique (feed_id, stop_id, language, stop_name)
+);
+
+drop table if exists stop_headsign_translations cascade;
+create table stop_headsign_translations (
+  feed_id integer not null,
+  trip_id varchar(63),
+  stop_sequence integer,
+  language varchar(7) not null,
+  translation varchar(255),
+  stop_headsign varchar(255),
+  unique (feed_id, trip_id, stop_sequence, language, stop_headsign)
+);
+
+drop table if exists route_short_name_translations cascade;
+create table route_short_name_translations (
+  feed_id integer not null,
+  route_id varchar(63),
+  language varchar(7) not null,
+  translation varchar(255),
+  route_short_name varchar(255),
+  unique (feed_id, route_id, language, route_short_name)
+);
+
+drop table if exists trip_headsign_translations cascade;
+create table trip_headsign_translations (
+  feed_id integer not null,
+  trip_id varchar(63),
+  language varchar(7) not null,
+  translation varchar(255),
+  trip_headsign varchar(255),
+  unique (feed_id, trip_id, language, trip_headsign)
+);
 
 
 

@@ -1,11 +1,15 @@
 insert into stop_name_translations
 select 
   translations.feed_id,
-  null as stop_id,
+  stop_id,
   language,
   translation,
   field_value
 from r.translations 
+inner join stops on (
+  stops.feed_id = translations.feed_id and
+  stop_name = field_value
+)
 where
   table_name = 'stops' and
   field_name = 'stop_name' and
@@ -30,12 +34,16 @@ where
 insert into stop_headsign_translations
 select
   translations.feed_id,
-  null as trip_id,
-  null as stop_sequence,
+  trip_id,
+  stop_sequence,
   language,
   translation,
   field_value
 from r.translations
+inner join stop_times on (
+  stop_times.feed_id = translations.feed_id and
+  stop_times.stop_headsign = translations.field_value
+)
 where
   table_name = 'stop_times' and
   field_name = 'stop_headsign' and
@@ -60,11 +68,15 @@ where
 insert into route_short_name_translations
 select
   translations.feed_id,
-  null as route_id,
+  route_id,
   language,
   translation,
   field_value
 from r.translations
+inner join routes on (
+  routes.feed_id = translations.feed_id and
+  routes.route_short_name = translations.field_value
+)
 where
   table_name = 'routes' and
   field_name = 'route_short_name' and
@@ -86,14 +98,18 @@ where
   record_sub_id is null and
   field_value is null;
 
-insert into trip_headsign_translations
+insert into ttrip_headsign_translations
 select
   translations.feed_id,
-  null as trip_id,
+  trip_id,
   language,
   translation,
   field_value
 from r.translations
+inner join trips on (
+  trips.feed_id = translations.feed_id and
+  trips.trip_headsign = translations.field_value
+)
 where
   table_name = 'trips' and
   field_name = 'trip_headsign' and

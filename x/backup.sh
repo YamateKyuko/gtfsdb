@@ -4,6 +4,7 @@
 source ./env.txt
 
 npx wrangler d1 execute gtfsdb --remote --yes --file="sql/d1_delete.sql"
+npx wrangler d1 execute gtfsdb --remote --yes --file="sql/sqlite_tables.sql"
 
 # バックアップファイルを作成
 pg_dump \
@@ -23,10 +24,10 @@ pg_dump \
   > "gtfsdb_backup.sql"
 
 # ファイルが大きいと怒られるので分割
-split -l 500000 gtfsdb_backup.sql chunk_backup_
+split -l 500000 gtfsdb_backup.sql ./chunks/chunk_backup_
 
 # 分割されたファイルを順に実行
-for CHUNK in chunk_backup_*; do
+for CHUNK in ./chunks/chunk_backup_*; do
   echo "Importing $CHUNK"
   npx wrangler d1 execute gtfsdb --remote --yes --file="$CHUNK"
 done

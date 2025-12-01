@@ -161,7 +161,8 @@ insert
 drop table if exists temps cascade;
 drop table if exists to_process cascade;
 
+drop table if exists next_stop_list cascade;
+
 drop extension postgis;
 
 -- next_stop_list_drop
-drop table if exists next_stop_list;

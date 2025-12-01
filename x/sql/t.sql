@@ -1,11 +1,11 @@
-
+-- select * from translations limit 100;
+-- drop table translations cascade;
 
 -- select * from translations 
 -- where 
 -- feed_id = 1 and
 -- field_name='stop_headsign'
 -- limit 100;
-
 
 
 

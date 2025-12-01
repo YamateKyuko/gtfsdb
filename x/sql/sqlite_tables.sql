@@ -19,6 +19,11 @@ drop table if exists feed;
 drop table if exists holidays;
 drop table if exists daytype_cnt;
 
+drop table if exists stop_name_translations;
+drop table if exists stop_headsign_translations;
+drop table if exists route_short_name_translations;
+drop table if exists trip_headsign_translations;
+
 -- drop table if exists stop_offsets;
 
 
@@ -234,7 +239,7 @@ create table stop_patterns (
 
 create table fare_attributes (
   feed_id smallint not null,
-  fare_id varchar(63) not null,
+  fare_id text not null,
   price float not null,
   ic_price float,
   currency_type varchar(15) not null, -- 通貨
@@ -248,26 +253,47 @@ create table fare_attributes (
 
 create table fare_rules (
   feed_id smallint not null,
-  fare_id varchar(63) not null,
-  route_id varchar(63) not null,
-  origin_id varchar(63),
-  destination_id varchar(63),
+  fare_id text not null,
+  route_id text not null,
+  origin_id text,
+  destination_id text,
   constraint fk_fare_rules_fare_id foreign key (feed_id, fare_id) references fare_attributes(feed_id, fare_id) on delete cascade on update cascade,
   constraint fk_fare_rules_route_id foreign key (feed_id, route_id) references routes(feed_id, route_id) on delete cascade on update cascade
 );
 -- create index if not exists ix_fare_rules_zone_id on fare_rules(feed_id, fare_id, origine_id, destination_id);
 
-
-create table translations (
-  feed_id integer not null,
-  language text not null check (language in ('ja', 'ja-Hrkt', 'en')), -- 言語
-  translation_type text not null check (translation_type in ('stop_name')),
-  translation text not null, -- 翻訳先
-  record_id text not null,
-  primary key (feed_id, language, translation_type, record_id)
+create table stop_name_translations (
+  feed_id smallint not null,
+  stop_id text,
+  language text not null,
+  translation text,
+  stop_name text
 );
--- create index if not exists ix_translations_zone_id on translations(feed_id, fare_id, origine_id, destination_id);
 
+create table stop_headsign_translations (
+  feed_id integer not null,
+  trip_id text,
+  stop_sequence integer,
+  language text not null,
+  translation text,
+  stop_headsign text
+);
+
+create table route_short_name_translations (
+  feed_id integer not null,
+  route_id text,
+  language text not null,
+  translation text,
+  route_short_name text
+);
+
+create table trip_headsign_translations (
+  feed_id integer not null,
+  trip_id text,
+  language text not null,
+  translation text,
+  trip_headsign text
+);
 
 create table holidays (
 	holiday_date text,
@@ -275,7 +301,6 @@ create table holidays (
 	holiday_day text
 );
 -- 
-
 
 create table daytype_cnt (
   feed_id integer not null,

@@ -1,10 +1,12 @@
 import { dbAPI } from "../gtfsdbAPI";
 
-const api = new dbAPI<{
-  pattern_id: number;
-  date: string; // yyyy-mm-dd
-}>({
+const api = new dbAPI({
   endpoint: 'gtfsdb/dia_times',
+
+  enty: {
+    pattern_id: 'number',
+    date: 'string',
+  },
 
   async getProcesor(
     reqObj,

@@ -318,23 +318,23 @@ select
 from r.fare_rules
 on conflict do nothing;
 
-insert into translations (
-  feed_id,
-  table_name,
-  field_name,
-  language,
-  translation,
-  record_id,
-  record_sub_id,
-  field_value
-)
-select
-  feed_id,
-  table_name,
-  field_name,
-  language,
-  translation,
-  record_id,
-  record_sub_id,
-  field_value
-from r.translations;
+-- insert into translations (
+--   feed_id,
+--   table_name,
+--   field_name,
+--   language,
+--   translation,
+--   record_id,
+--   record_sub_id,
+--   field_value
+-- )
+-- select
+--   feed_id,
+--   table_name,
+--   field_name,
+--   language,
+--   translation,
+--   record_id,
+--   record_sub_id,
+--   field_value
+-- from r.translations;

@@ -16,7 +16,7 @@ drop index if exists ix_stop_times_departure_time;
 drop index if exists ix_fare_attributes_fare_id;
 drop index if exists ix_fare_rules_zone_id;
 
-delete from translations;
+-- delete from translations;
 delete from fare_rules;
 delete from fare_attributes;
 
@@ -34,3 +34,8 @@ delete from feed;
 
 delete from holidays;
 delete from daytype_cnt;
+
+delete from stop_name_translations;
+delete from stop_headsign_translations;
+delete from route_short_name_translations;
+delete from trip_headsign_translations;

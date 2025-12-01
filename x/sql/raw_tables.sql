@@ -197,7 +197,6 @@ create table r.translations (
 
 
 
-
 -- feed_id設定 必ず実行
 drop function if exists r.feed_ider(integer) cascade;
 create function r.feed_ider(integer) returns void as $$
