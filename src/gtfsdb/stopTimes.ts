@@ -103,7 +103,7 @@ left join stop_headsign_translations as sht on (
   (tim.feed_id = sht.feed_id and tim.stop_headsign = sht.stop_headsign)) and
   sht.language = ?3
 WHERE tim.feed_id = ?1 and tim.trip_id = ?2
-order by stop_sequence;`;
+order by tim.stop_sequence;`;
 
 const stopTimesFaredQuery = `
 with curr_zone_id as (select zone_id from stop_times inner join stops using(feed_id, stop_id) where feed_id = ?1 and trip_id = ?2 and stop_sequence = ?3),
@@ -191,4 +191,4 @@ left join stop_headsign_translations as sht on (
   (tim.feed_id = sht.feed_id and tim.stop_headsign = sht.stop_headsign)) and
   sht.language = ?4
 WHERE tim.feed_id = ?1 and tim.trip_id = ?2
-order by stop_sequence;`;
+order by tim.stop_sequence;`;
