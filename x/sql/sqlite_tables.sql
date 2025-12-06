@@ -110,6 +110,11 @@ create table trip_patterns (
   agency_id text,
   direction_id integer check (direction_id in (0, 1)),
   route_name text not null,
+
+  first_stop_id text,
+  last_stop_id text,
+  first_stop_name text,
+  
   primary key (pattern_id)
 );
 

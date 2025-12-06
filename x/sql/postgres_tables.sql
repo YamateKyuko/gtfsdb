@@ -83,6 +83,11 @@ create table trip_patterns (
   agency_id varchar(63),
   direction_id integer check (direction_id in (0, 1)),
   route_name varchar(255) not null,
+
+  first_stop_id varchar(63),
+  last_stop_id varchar(63),
+  first_stop_name varchar(255),
+  
   primary key (pattern_id)
 );
 -- create index if not exists ix_trip_patterns_pattern_id on trip_patterns(pattern_id);
