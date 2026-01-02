@@ -15,3 +15,5 @@ create index if not exists ix_stop_patterns_stop_sequence on stop_patterns(patte
 create index if not exists ix_fare_attributes_fare_id on fare_attributes(feed_id, fare_id);
 create index if not exists ix_fare_rules_zone_id on fare_rules(feed_id, route_id, origin_id, destination_id);
 -- create index if not exists ix_translations_zone_id on translations(feed_id, fare_id, origine_id, destination_id);
+
+create index if not exists ix_trips_pattern_id on trips(pattern_id);

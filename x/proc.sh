@@ -13,10 +13,12 @@ source execsql.sh ./sql/postgres_tables.sql
 
 # psql gtfsdb -U $pguser -p 5432 -c "set client_min_messages to notice;"
 
-source inst.sh "$1" "keiobus" "20251117"
+source inst.sh "$1" "keiobus" "20251229"
 source inst.sh "" "toeibus" ""
 source inst.sh "$1" "seibubus" ""
 
+
+# source inst.sh "$1" "odakyubus" "20251001"
 
 
 echo "--> 仮テーブル削除"

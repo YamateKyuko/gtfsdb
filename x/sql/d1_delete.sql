@@ -16,6 +16,8 @@ drop index if exists ix_stop_times_departure_time;
 drop index if exists ix_fare_attributes_fare_id;
 drop index if exists ix_fare_rules_zone_id;
 
+drop index if exists ix_trips_pattern_id;
+
 -- delete from translations;
 delete from fare_rules;
 delete from fare_attributes;

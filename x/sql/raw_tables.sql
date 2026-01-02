@@ -182,14 +182,31 @@ create table r.fare_rules (
 -- table_name,field_name,language,translation,record_id,record_sub_id,field_value
 drop table if exists r.translations cascade;
 create table r.translations (
+
   feed_id integer,
-  table_name varchar(63) not null,
-  field_name varchar(63) not null,
-  language varchar(15) not null, -- 言語
-  translation varchar(255) not null, -- 翻訳先
+
+  -- jp1,2版
+  trans_id varchar(255),
+  lang varchar(15),
+  translation varchar(255),
+
+  -- jp3版
+  table_name varchar(63),
+  field_name varchar(63),
+  language varchar(15), -- 言語
+  -- translation varchar(255), -- 翻訳先
   record_id varchar(63),
   record_sub_id varchar(63),
   field_value varchar(255) -- 翻訳元
+
+  -- feed_id integer,
+  -- table_name varchar(63) not null,
+  -- field_name varchar(63) not null,
+  -- language varchar(15) not null, -- 言語
+  -- translation varchar(255) not null, -- 翻訳先
+  -- record_id varchar(63),
+  -- record_sub_id varchar(63),
+  -- field_value varchar(255) -- 翻訳元
 );
 
 

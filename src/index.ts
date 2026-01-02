@@ -4,6 +4,8 @@ import diaTimesAPI from "./gtfsdb/diaTimes";
 import stationsAPI from "./gtfsdb/stations";
 import stationTimesAPI from "./gtfsdb/stationTimes";
 import patternTimesAPI from "./gtfsdb/patternTimes";
+import patternsAPI from "./gtfsdb/patterns";
+import patternTripsAPI from "./gtfsdb/patternTrips";
 
 // import patternsTileAPI from "./mvts/patternsTile";
 
@@ -46,6 +48,10 @@ export default {
             return await stationTimesAPI.get(req, env.GTFSDB, apiKey);
           case 'pattern_times':
             return await patternTimesAPI.get(req, env.GTFSDB, apiKey);
+          case 'patterns':
+            return await patternsAPI.get(req, env.GTFSDB, apiKey);
+          case 'pattern_trips':
+            return await patternTripsAPI.get(req, env.GTFSDB, apiKey);
           default:
             return Response.json({gtfsdb: 'Not Found'}, { status: 404 })
         };

@@ -163,6 +163,55 @@ drop table if exists to_process cascade;
 
 drop table if exists next_stop_list cascade;
 
-drop extension postgis;
+
+
+
+
+with t as (
+  select
+    pattern_id,
+    first_value(stop_id) over(
+      partition by pattern_id
+      order by stop_sequence
+      rows between
+        unbounded preceding and
+        unbounded following
+      ) as first_stop_id,
+    first_value(stop_name) over(
+      partition by pattern_id
+      order by stop_sequence
+      rows between
+        unbounded preceding and
+        unbounded following
+      ) as first_stop_name,
+    last_value(stop_id) over(
+      partition by pattern_id
+      order by stop_sequence
+      rows between
+        unbounded preceding and
+        unbounded following
+      ) as last_stop_id
+
+    from stop_patterns
+    where stop_sequence = 1
+    order by pattern_id, stop_sequence
+)
+update trip_patterns set
+  first_stop_id = t.first_stop_id,
+  first_stop_name = t.first_stop_name,
+  last_stop_id = t.last_stop_id
+from t
+where
+  trip_patterns.pattern_id = t.pattern_id;
+
+
+
+
+
+
+
+
+
+drop extension postgis cascade;
 
 -- next_stop_list_drop

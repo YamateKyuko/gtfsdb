@@ -23,26 +23,30 @@ select
     'station_lon', station_lon,
     'stop_patterns', json_group_array(
       json_object(
-        'feed_id', feed_id,
+        'feed_id', stops.feed_id,
         'stop_id', stop_id,
         'stop_name', stops.stop_name,
-        'pattern_id', pattern_id,
-        'route_id', route_id,
+        'pattern_id', spt.pattern_id,
+        'route_id', spt.route_id,
         'stop_sequence', stop_sequence,
-        'direction_id', direction_id,
-        'route_name', route_name,
+        'direction_id', spt.direction_id,
+        'route_name', spt.route_name,
         'stop_headsign', stop_headsign,
-        'platform_code', ptn.platform_code,
-        'zone_id', ptn.zone_id
-      ) order by stop_id, pattern_id
+        'platform_code', spt.platform_code,
+        'zone_id', spt.zone_id,
+        'first_stop_name', first_stop_name,
+        'weekday_count', cnt
+      ) order by stop_id, stops.feed_id, spt.route_id, cnt desc
     )
   ) as obj
-from parent_stations
-inner join stops using(station_id)
-inner join stop_patterns as ptn using (feed_id, stop_id)
+from parent_stations, (select '平' as daytype)
+left join stops using(station_id)
+left join stop_patterns as spt using (feed_id, stop_id)
+left join trip_patterns as tpt using (pattern_id)
+left join daytype_cnt as cnt using (pattern_id, daytype)
 WHERE 
-  station_id = ?1
-group by station_id
+  station_id = ?1 and
+  location_type != 1
 ;`,
     )
       .bind(...[stationId])

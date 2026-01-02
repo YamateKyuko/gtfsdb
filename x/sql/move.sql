@@ -151,11 +151,16 @@ select
   service_id,
   to_char(to_date(date, 'YYYYMMDD'), 'YYYY-MM-DD') as date
 from dowck
-left join r.calendar_dates using(feed_id,service_id,date)
+full join r.calendar_dates using(feed_id,service_id,date)
 where
-  exception_type != 2 or
-  exception_type = 1 or
-  exception_type is null;
+  (
+    exception_type = 1 or
+    exception_type is null
+  ) and
+  exception_type != 2;
+  -- exception_type != 2 and
+  -- exception_type = 1 or
+  -- exception_type is null;
 
 insert into trips (
   feed_id,

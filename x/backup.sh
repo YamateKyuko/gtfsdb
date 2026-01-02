@@ -19,12 +19,37 @@ pg_dump \
   --no-privileges \
   --encoding=utf8 \
   --no-acl \
+  --rows-per-insert=100 \
   | sed -u '/^SET/d; /^SELECT pg_catalog.set_config/d' \
   | sed -u 's/INSERT INTO public\./INSERT INTO /g' \
   > "gtfsdb_backup.sql"
 
+# rows-per-insert=nrows
+
 # ファイルが大きいと怒られるので分割
-split -l 500000 gtfsdb_backup.sql ./chunks/chunk_backup_
+awk '
+BEGIN {
+  file_num = 0;
+  lines = 0;
+  limit = 100000; # 分割の目安となる行数 (これを超えたら次のセミコロンで切る)
+  out_prefix = "./chunks/chunk_backup_";
+}
+{
+  # ファイル名決定 (連番: 000, 001, ...)
+  if (lines == 0) {
+    out = sprintf("%s%03d", out_prefix, file_num);
+  }
+  print $0 > out;
+  lines++;
+  
+  # セミコロンで終わる行 かつ 閾値を超えていたらファイルを閉じて次へ
+  if ($0 ~ /;[[:space:]]*$/ && lines > limit) {
+    close(out);
+    file_num++;
+    lines = 0;
+  }
+}
+' gtfsdb_backup.sql
 
 # 分割されたファイルを順に実行
 for CHUNK in ./chunks/chunk_backup_*; do

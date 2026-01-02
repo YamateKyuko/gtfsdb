@@ -89,20 +89,27 @@ export class dbAPI<T extends Enty> {
     return this;
   };
 
-  get(
+  async get(
     request: Request,
     db: D1Database,
     apiKey: string
   ) {
-    return this.auth(
-      request,
-      this.getProcessor,
-      db,
-      apiKey
-    );
+    try {
+      const res = await this.auth(
+        request,
+        this.getProcessor,
+        db,
+        apiKey
+      );
+      return res;
+    } catch (e) {
+      console.log(e);
+      return Response.json({ error: 'error' }, { status: 500 });
+    }
+    
   };
 
-  auth(
+  async auth(
     req: Request,
     func: typeof this.getProcessor,
     db: D1Database,
@@ -191,11 +198,13 @@ export class dbAPI<T extends Enty> {
       // リクエストパラメータ検証
       const requestObj = payload.requestObj;
       if (!isObject(requestObj)) return Response.json({ error: 'wrong request parameter format' }, { status: 401 });
-
-      return func(
+      
+      const res = await func(
         payload.requestObj as reqType<T>,
         db
       ); // 型注意
+
+      return res;
     } catch (e) {
       console.log(e);
       return Response.json({ error: 'error' }, { status: 401 });

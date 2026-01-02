@@ -19,6 +19,10 @@ elif [ $FEED = "seibubus" ]; then
   echo "西武バス"
   URL="https://api.odpt.org/api/v4/files/SeibuBus/data/SeibuBus-GTFS.zip?acl:consumerKey=${CONS}"
   FEID=3
+elif [ $FEED = "odakyubus" ]; then
+  echo "小田急バス"
+  URL="https://api.odpt.org/api/v4/files/odpt/OdakyuBus/AIILines.zip?date=${DATE}&acl:consumerKey=${CONS}"
+  FEID=4
 else
   exit
 fi
