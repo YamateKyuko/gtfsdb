@@ -1,6 +1,11 @@
 #!/bin/sh
 # source ./backup.sh で実行
 
+echo "--> chunksフォルダが"
+
+mv ./chunks ~/.Trash
+mkdir ./chunks
+
 source ./env.txt
 
 npx wrangler d1 execute gtfsdb --remote --yes --file="sql/d1_delete.sql"

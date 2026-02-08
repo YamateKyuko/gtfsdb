@@ -153,11 +153,11 @@ select
 from dowck
 full join r.calendar_dates using(feed_id,service_id,date)
 where
-  (
+  -- (
     exception_type = 1 or
-    exception_type is null
-  ) and
-  exception_type != 2;
+    exception_type is null;
+  -- ) and
+  -- exception_type != 2;
   -- exception_type != 2 and
   -- exception_type = 1 or
   -- exception_type is null;
